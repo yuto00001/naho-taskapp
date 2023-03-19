@@ -1,17 +1,18 @@
 <template>
   <div class="myPage">
+    <div>
+      <img class="header-image" src="" alt="">
+      <img class="user-icon" :src="$store.state.userData.iconURL" alt="">
+    </div>
     <div v-if="$store.state.userData.userName">
-      <h1>{{ $store.state.userData.userName }}としてログインしています</h1>
+      <h2>ユーザー：{{ $store.state.userData.userName }}</h2>
       <router-link to="/SettingProfile">プロフィール設定</router-link>
     </div>
     <div v-else >
-      <h1>現在ログインされておりません</h1>
+      <h2>現在ログインされておりません</h2>
       <p><router-link  outer-link to="/SignIn">サインインする</router-link></p>
     </div>
-    <div class="signOut-delete">
-      <button @click="signOut">SignOut</button>
-      <button @click="deleteAccount">アカウントを削除</button>
-    </div>
+
     <section class="calendar">
       <h2>calendar</h2>
     </section>
@@ -65,26 +66,24 @@ export default {
   data() {
     return {
       taskContent: '',
+      selectedFile: null,
       tasks: [],
     }
   },
   methods: {
+    handleFileUpload() { //todo watchにいれるべきでは。。。ファイル追加されてもデータにはいらない
+      // todo とりあえず手動でcomponentsを更新してチェックする
+      this.selectedFile = this.$refs.fileInput.files[0];
+    },
+    addIconImageTest() {
+      this.$store.dispatch('addIconImage', this.selectedFile)
+    },
     ...mapActions([
       'addTodoForFirebase',
     ]),
-    addTodo() {//! ajaxを用いてtodoを部分読み込み
+    addTodo() {//todo ajaxを用いてtodoを部分読み込み
       console.log('addTodaaaao run')
       this.addTodoForFirebase(this.taskContent)
-    },
-    signOut() {
-      if(confirm('本当にサインアウトしますか？')) {
-        firebase.auth().signOut()
-        .then(() => {
-          alert('正常にサインアウトしました')
-        }).catch((error) => {
-          console.error(error)
-        });
-      }
     },
     editTask(task) {
       if(task.editing) {
@@ -110,56 +109,12 @@ export default {
         });
       }
     },
-    deleteTask(task) { //! データの更新を待たずに画面上だけ削除したい = 意味は違うがajaxでできる
+    deleteTask(task) { //todo データの更新を待たずに画面上だけ削除したい = 意味は違うがajaxでできる
       firebase.firestore().collection("todos").doc(task.docID).delete()
       .then(() => {
-        console.log("Document successfully deleted!");
+        alert("todoを削除しました");
       }).catch((error) => {
         console.error("Error removing document: ", error);
-      });
-    },
-    deleteAccount() {
-      firebase.auth().currentUser.reauthenticateWithCredential(this.promptForCredentials())
-      .then((doc) => {
-        console.log('デリート、プロンプト', doc)
-        // ユーザーが認証されている場合はアカウント削除を実行する
-        const confirmResult = confirm('あなたのデータは全て削除されます。本当にアカウントを削除しますか？');
-        if (confirmResult) {
-          firebase.auth().currentUser.delete()
-          .then(() => {
-            alert('正常にアカウントを削除しました');
-            this.deleteUserData();
-            this.deleteUsersTodoData();
-          }).catch((error) => {
-            alert('正常にアカウントを削除できませんでした');
-            console.error(error);
-          });
-        } else {
-          return
-        }
-      }).catch((error) => {
-        console.error(error.message);
-      });
-    },
-    promptForCredentials() {
-      const email = prompt('メールアドレスを入力してください');
-      const password = prompt('パスワードを入力してください');
-      return firebase.auth.EmailAuthProvider.credential(email, password);
-    },
-    deleteUserData() {
-      firebase.firestore().collection("users").doc(this.$store.state.userData.uuid).delete()
-      .then(() => {
-        alert('正常にユーザーデータを削除しました')
-      }).catch((error) => {
-        alert('正常にユーザーデータを削除できませんでした', error);
-      });
-    },
-    deleteUsersTodoData() {
-      firebase.firestore().collection("todos").doc(this.$store.state.userData.uuid).delete()
-      .then(() => {
-        alert('正常にあなたのTodoデータを削除しました')
-      }).catch((error) => {
-        alert('正常にあなたのTodoデータを削除できませんでした', error);
       });
     },
   },
@@ -174,6 +129,15 @@ export default {
 <style scoped>
 .todo-area {
   display: inline-block;
+}
+.header-image {
+  width: 100vw;
+  height: 8vh;
+}
+.user-icon {
+  position: absolute;
+  top: 10%;
+  left: 41%;
 }
 
 </style>

@@ -11,6 +11,11 @@ const routes = [
     component: HomeView
   },
   {
+    path: '/SettingProfile',
+    name: 'SettingProfile',
+    component: () => import('../views/SettingProfile.vue')
+  },
+  {
     path: '/MyPage',
     name: 'MyPage',
     component: () => import('../views/MyPage.vue')

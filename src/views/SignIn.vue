@@ -6,11 +6,7 @@
         <form @submit="creteUser_signIn">
           <label>
             icon image:
-            <input type="file">
-          </label>
-          <label>
-            Profile Name:
-            <input type="text" v-model="userData.profileName" required>
+            <input type="file" @change="handleFileUpload" ref="fileInput" required>
             <span class="validity"></span>
           </label>
           <label>
@@ -38,6 +34,7 @@
               <span class="validity"></span>
             </div>
           </label>
+          <button class="resetPass" type="button" @click="resetPass">パスワードを再設定する</button>
           <button type="submit">Sign In</button>
           <button @click.prevent="onLoginWindow">既にSignInがお済みの方はこちら</button>
         </form>
@@ -48,10 +45,21 @@
           <label>
             Email:
             <input type="email" v-model="userData.email" required>
+            <span class="validity"></span>
           </label>
           <label>
             Password:
-            <input type="password" v-model="userData.password" placeholder="6桁以上" required>
+            <div class="pass-area">
+              <span :class="toggleEye" @click="toggleInputType"></span>
+              <input
+              :type="inputType"
+              v-model="userData.password"
+              placeholder="6桁以上"
+              autocomplete="current-password"
+              required
+              >
+              <span class="validity"></span>
+            </div>
           </label>
           <button type="submit">log In</button>
           <button @click.prevent="onLoginWindow">まだSignInがお済みでない方はこちら</button>
@@ -79,32 +87,36 @@ export default {
       inputType: 'password',
       toggleEye: 'fa fa-eye',
       a_loginWindow: false,
+      selectedFile: null,
       userData: {
-        profileName: '',
         userName: '',
-        uuid: '',
         email: '',
         password: '',
-        icon: '',
+        uuid: '',
       },
     }
   },
   methods: {
+    handleFileUpload() { //todo watchにいれるべきでは。。。ファイル追加されてもデータにはいらない
+      this.selectedFile = this.$refs.fileInput.files[0];
+    },
     ...mapActions([
       'addUserDataForFirebase',
     ]),
-    creteUser_signIn() {
+    async creteUser_signIn() {
       console.log('signIn run')
-      firebase.auth().createUserWithEmailAndPassword(this.userData.email, this.userData.password)
-      .then((userCredential) => {
+      try {
+        const userCredential = await firebase.auth().createUserWithEmailAndPassword(this.userData.email, this.userData.password)
         this.userData.uuid = userCredential.user.uid
-        this.addUserDataForFirebase(this.userData)
+        await this.addUserDataForFirebase(this.userData)
+        await this.$store.dispatch('addIconImage', this.selectedFile)
         console.log('createUser_signIn run', userCredential)
         alert('サインイン完了')
-      })
-      .catch((error) => {
-        alert('サインインできませんでした', error.message)
-      });
+        this.$router.push('/MyPage');
+      } catch (error) {
+        console.error('Error during sign in:', error);
+        alert('サインインできませんでした');
+      }
     },
     login() {
       firebase.auth().signInWithEmailAndPassword(this.userData.email, this.userData.password)
@@ -112,10 +124,12 @@ export default {
         this.userData.uuid = userCredential.user.uid
         this.$store.commit('updateUserData', this.userData)
         console.log('login run', userCredential)
-        alert('サインイン完了')
+        alert('ログイン完了')
       })
       .catch((error) => {
-        alert('ログインできませんでした', error.message)
+        console.error('Error during login:', error);
+        console.error('Error during login:', error.message);
+        alert('ログインできませんでした。メールアドレスかパスワードを間違えている可能性があります')
       });
     },
     onLoginWindow() {
@@ -132,6 +146,17 @@ export default {
       } else {
         this.inputType = 'password'
         this.toggleEye = "fa fa-eye"
+      }
+    },
+    resetPass() {
+      if(window.confirm('パスワードの再設定用メールを送信しますか？')) {
+        const credential = this.$store.dispatch('promptForCredentials');
+        firebase.auth().currentUser.reauthenticateWithCredential(credential) //!check
+        .then(() => {
+          this.$store.dispatch('resetPass')
+        }).catch((error) => {
+          console.error(error.message);
+        });
       }
     },
   },
@@ -172,6 +197,9 @@ form{
 }
 .pass-area input{
   border: none;
+}
+.resetPass {
+  margin-bottom: 2vh;
 }
 input:invalid + span::after {
   position: absolute;
