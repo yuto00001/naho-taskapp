@@ -20,13 +20,13 @@
       <div class="navItemsArea" @click="openNewMemoEdit">
         <!-- add用のarticle -->
         <article @click.stop>
-          <div v-if="navData.newNavOpen" @click="closeNavModal" class="back-bord"></div>
+          <div v-if="navData.newNavOpen" @click="addNavItem" class="back-bord"></div>
           <div v-if="navData.newNavOpen" class="nav-modal">
             <div class="nav-input">
               <input type="text" class="navModalTitle" v-model="navData.navModalTitle" placeholder="Title">
               <input type="text" class="navModalTextArea" v-model="navData.navModalTextArea" placeholder="Text Area">
             </div>
-            <button @click="addNavItem">追加する</button>
+            <button @click="closeNewTextStatus">キャンセル</button>
           </div>
         </article>
         <article v-for="(memo, index) in navMemoValue" :key="index" @click.stop>
@@ -172,22 +172,35 @@ export default {
       memo.editText = true
     },
     closeNavModal(memo) {
-      if(!memo.navOpen) {
-        this.navData.newNavOpen = false
-        console.log('closeNavModal')
-      } else {
-        memo.navOpen = false,
-        console.log('memo closeNavModal', memo)
-      }
+      memo.navOpen = false,
+      console.log('memo closeNavModal', memo)
+      this.updateMemoData(memo)
       memo.editText = false
+    },
+    closeNewTextStatus() {
+      this.navData.newNavOpen = false
+      console.log('new item modal close')
+    },
+    updateMemoData(memo) {
+      firebase.firestore().collection("navItems").doc(memo.docID).update({
+        taskContent: memo.taskContent,
+        taskModalTextArea: memo.taskModalTextArea,
+        z_updatedAt: myShaped,
+      })
+      .then(() => {
+        console.log("editEnd run");
+      })
+      .catch((error) => {
+        console.error("Error updating document: ", error);
+      });
     },
     addNavItem() {
       if(!this.navData.navModalTitle) {
         return
       } else {
-        this.addNavItemForFirestore(this.navData)
         console.log('addNavItem run', this.navData)
-        this.navData.newNavOpen = false
+        this.addNavItemForFirestore(this.navData)
+        this.closeNewTextStatus()
       }
     },
     deleteNavItem(memo) {
