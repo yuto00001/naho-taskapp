@@ -49,7 +49,8 @@ nav a.router-link-exact-active {
 }
 
 .user-icon {
-  width: 20%;
+  width: 100%;
+  border-radius: 50%;
   aspect-ratio: 1 / 1;
 }
 span,

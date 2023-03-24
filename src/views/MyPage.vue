@@ -1,21 +1,22 @@
 <template>
   <div id="container" class="myPage">
     <section id="itemA" class="header">
-      <div>
-        <img class="user-icon" :src="$store.state.userData.iconURL" alt="">
-      </div>
       <div v-if="$store.state.userData.userName" class="headInfo">
         <h2>ユーザー：{{ $store.state.userData.userName }}</h2>
-        <router-link to="/SettingProfile">プロフィール設定</router-link>
       </div>
       <div v-else >
         <h2>現在ログインされておりません</h2>
         <p><router-link  outer-link to="/SignIn">サインインする</router-link></p>
       </div>
     </section>
-
+    <section id="itemD">
+      <img class="user-icon" :src="$store.state.userData.iconURL" alt="">
+    </section>
     <section id="itemB" class="nav">
-      <router-link to="/AllArchive">AllArchive</router-link>
+      <div class="navLink">
+        <router-link to="/AllArchive">AllArchive</router-link>
+        <router-link to="/SettingProfile">setting</router-link>
+      </div>
       <div class="navItemsArea" @click="openNewMemoEdit">
         <!-- add用のarticle -->
         <article @click.stop>
@@ -28,7 +29,6 @@
             <button @click="addNavItem">追加する</button>
           </div>
         </article>
-
         <article v-for="(memo, index) in navMemoValue" :key="index" @click.stop>
           <div v-if="memo.navOpen" @click="closeNavModal(memo)" class="back-bord"></div>
           <p @click="openMemoEdit(memo)">{{ memo.navModalTitle }}</p>
@@ -47,7 +47,6 @@
             <button @click="deleteNavItem(memo)">削除</button>
           </div>
         </article>
-
       </div>
     </section>
     <section id="itemC" class="main">
@@ -61,14 +60,24 @@
           </tr>
 
           <tr v-for="(task, index) in tasksValue" :key="index">
-            <td><input type="checkbox" v-model="task.completed" @change="handleCheckboxChange(task)" name="" id=""></td>
-            <td><input type="datetime-local" v-model="task.dateLimit" @change="dateLimitSet(task)" name="" id=""></td>
-            <td @click="editTask(task)">
-              <span v-if="!task.editing">{{ task.taskContent }}</span>
-              <input v-else type="text" v-model="task.taskContent" @keydown.enter="editEnd(task)">
+            <td><input type="checkbox" v-model="task.completed" @change="handleCheckboxChange(task)"></td>
+            <td><input type="datetime-local" v-model="task.dateLimit" @change="dateLimitSet(task)"></td>
+            <td @click="taskOpen(task)">
+              <span v-if="!task.taskOpen">{{ task.taskContent }}</span>
             </td>
-            <button  v-if="task.editing" @click="editEnd(task)">完了</button>
-            <button @click="deleteTask(task)">削除</button>
+            <div v-if="task.taskOpen" @click="editEnd(task)" class="back-bord"></div>
+            <div v-if="task.taskOpen" class="nav-modal">
+              <div v-if="!task.editing" @click="editTaskStatus(task)" class="nav-input">
+                <h2>{{ task.taskContent }}</h2>
+                <p v-if="!task.taskModalTextArea" class="nav-textArea placeholderText">Text Area</p>
+                <p v-else class="nav-textArea">{{ task.taskModalTextArea }}</p>
+              </div>
+              <div v-else class="nav-input">
+                <input type="text" class="navModalTitle" v-model="task.taskContent" placeholder="Task">
+                <input type="text" class="navModalTextArea" v-model="task.taskModalTextArea" placeholder="Text Area">
+              </div>
+              <button @click="deleteTask(task)">削除</button>
+            </div>
           </tr>
 
         </table>
@@ -83,20 +92,30 @@
           </tr>
 
           <tr v-for="(task, index) in archiveTasksValue" :key="index">
-            <td><input type="checkbox" v-model="task.completed" @change="handleCheckboxChange(task)" name="" id=""></td>
+            <td><input type="checkbox" v-model="task.completed" @change="handleCheckboxChange(task)"></td>
             <td><input type="datetime-local" v-model="task.dateLimit" @change="dateLimitSet(task)" class="archive-task"></td>
-            <td @click="editTask(task)" class="archive-task">
-              <span v-if="!task.editing">{{ task.taskContent }}</span>
-              <input v-else type="text" v-model="task.taskContent" @keydown.enter="editEnd(task)">
+            <td @click="taskOpen(task)"  class="archive-task">
+              <span v-if="!task.taskOpen">{{ task.taskContent }}</span>
             </td>
-            <button  v-if="task.editing" @click="editEnd(task)">完了</button>
-            <button @click="deleteTask(task)">削除</button>
+            <div v-if="task.taskOpen" @click="editEnd(task)" class="back-bord"></div>
+            <div v-if="task.taskOpen" class="nav-modal">
+              <div v-if="!task.editing" @click="editTaskStatus(task)" class="nav-input">
+                <h2>{{ task.taskContent }}</h2>
+                <p v-if="!task.taskModalTextArea" class="nav-textArea placeholderText">Text Area</p>
+                <p v-else class="nav-textArea">{{ task.taskModalTextArea }}</p>
+              </div>
+              <div v-else class="nav-input">
+                <input type="text" class="navModalTitle" v-model="task.taskContent" placeholder="Task">
+                <input type="text" class="navModalTextArea" v-model="task.taskModalTextArea" placeholder="Text Area">
+              </div>
+              <button @click="deleteTask(task)">削除</button>
+            </div>
           </tr>
 
         </table>
       </div>
       <div class="input-area">
-        <input type="text" name="" id="" v-model="taskContent">
+        <input type="text" v-model="taskContent">
         <button @click="addTodo()">追加</button>
       </div>
     </section>
@@ -199,49 +218,52 @@ export default {
       console.log('dateLiimitSet', task.dateLimit)
       this.$store.dispatch('updateLimitForFirestore', task)
     },
-    handleFileUpload() { //todo watchにいれるべきでは。。。ファイル追加されてもデータにはいらない
-      // todo とりあえず手動でcomponentsを更新してチェックする
+    handleFileUpload() {
       this.selectedFile = this.$refs.fileInput.files[0];
     },
     ...mapActions([
       'addTodoForFirebase',
       'addNavItemForFirestore',
     ]),
-    addTodo() {//todo ajaxを用いてtodoを部分読み込み
+    addTodo() {
       console.log('addTodaaaao run')
       this.addTodoForFirebase(this.taskContent)
     },
-    editTask(task) {
-      if(task.editing) {
-        return
-      } else {
-        task.editing = true
-      }
+    taskOpen(task) {
+      task.taskOpen = true
+      console.log('taskOpen')
+    },
+    editTaskStatus(task) {
+      task.editing = true
     },
     editEnd(task) {
-      if(!task.editing) {
+      firebase.firestore().collection("todos").doc(task.docID).update({
+        taskContent: task.taskContent,
+        taskModalTextArea: task.taskModalTextArea,
+        z_updatedAt: myShaped,
+      })
+      .then(() => {
+        console.log("editEnd run");
+        task.taskOpen = false
+        task.editing = false
+      })
+      .catch((error) => {
+        console.error("Error updating document: ", error);
+      });
+    },
+    deleteTask(task) {
+      if(!confirm('このtaskを削除しますか？')) {
         return
       } else {
-        task.editing = false
-        firebase.firestore().collection("todos").doc(task.docID).update({
-          taskContent: task.taskContent,
-          z_updatedAt: myShaped,
-        })
+        firebase.firestore().collection("todos").doc(task.docID).delete()
         .then(() => {
-          console.log("editEnd run");
-        })
-        .catch((error) => {
-          console.error("Error updating document: ", error);
+          alert("todoを削除しました");
+          task.taskOpen = false
+          task.editing = false
+        }).catch((error) => {
+          console.error("Error removing document: ", error);
         });
       }
-    },
-    deleteTask(task) { //todo データの更新を待たずに画面上だけ削除したい = 意味は違うがajaxでできる
-      firebase.firestore().collection("todos").doc(task.docID).delete()
-      .then(() => {
-        alert("todoを削除しました");
-      }).catch((error) => {
-        console.error("Error removing document: ", error);
-      });
     },
   },
   created() {
@@ -268,6 +290,12 @@ export default {
   justify-content: space-between;
   padding: 2%;
 }
+.nav-textArea {
+  height: 90%;
+  margin: 5% 0;
+  display: flex;
+  align-items: center;
+}
 
 .back-bord {
   background-color: rgba(19, 19, 19, 0.633);
@@ -286,8 +314,13 @@ export default {
 .nav-modal button {
   height: 6%;
 }
+.navLink {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
 .navItemsArea {
-  height: 100%;
+  height: 90%;
 }
 .navModalTitle {
   margin: 5% 0 3%;
@@ -296,8 +329,6 @@ export default {
 .navModalTextArea {
   height: 88%;
 }
-
-
 
 .todos-area {
   display: inline-block;
@@ -321,20 +352,22 @@ export default {
 table {
   margin: auto;
 }
-.archive-task {
-  pointer-events: none;
-  user-select: none;
+.archive-task,
+.placeholderText {
   opacity: .5;
 }
 
 #container {
   height: 82vh;
   display: grid;
-  grid-template-rows: 30% 70%;
-  grid-template-columns: 1fr 80%;
+  grid-template-rows: 15% 35%;
+  grid-template-columns: 20% 80%;
   grid-template-areas:
-    "nav  head"
+    "img  head"
     "nav  main"
+    "nav  main"
+    "nav  main"
+
 }
 #itemA {
   grid-area: head;
@@ -344,6 +377,10 @@ table {
 }
 #itemC {
   grid-area: main;
+}
+#itemD {
+  grid-area: img;
+  align-self: end;
 }
 
 </style>

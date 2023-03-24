@@ -101,6 +101,8 @@ export default new Vuex.Store({
         uuid: context.state.userData.uuid,
         docID: '',
         completed: false,
+        taskOpen: false,
+        taskModalTextArea: '',
         taskContent: taskContent,
         editing: context.state.editing,
         z_createdAt: myShaped,
@@ -292,7 +294,7 @@ export default new Vuex.Store({
           querySnapshot.forEach((doc) => {
             const data = {
               ...doc.data(),
-              docID: doc.id
+              docID: doc.id,
             }
             console.log('fetchTodoData run', doc.id, " => ", doc.data());
             console.log('フェッチTODOデータ run', tasksData);
