@@ -15,7 +15,10 @@ Vue.use(Vuex)
 
 export default new Vuex.Store({
   state: { // 空のオブジェクトを定義する
+    nowDate: format(toDate, 'yyyy . MM / dd'),
     tasks: [],
+    archiveTasks: [],
+    navData: [],
     a_loginWindow: false,
     editing: false,
     userData: {
@@ -39,6 +42,12 @@ export default new Vuex.Store({
     setTasksData(state, tasksData) {
       state.tasks = tasksData
     },
+    setArchiveTasksData(state, archiveTasksData) {
+      state.archiveTasks = archiveTasksData
+    },
+    setNavData(state, navData) {
+      state.navData = navData
+    },
     updateUserData(state, doc) {
       const {data, id} = doc
       state.userData.userName = data.userName
@@ -59,6 +68,12 @@ export default new Vuex.Store({
     },
     addUuid(state, uuid) {
       state.userData.uuid = uuid
+    },
+    addArchiveTask(state, taskData) {
+      state.archiveTasks = taskData
+    },
+    reAddTask(state, taskData) {
+      state.tasks = taskData
     },
     toggleInput(state) {
       state.editing = !state.editing;
@@ -85,6 +100,7 @@ export default new Vuex.Store({
         email: context.state.userData.email,
         uuid: context.state.userData.uuid,
         docID: '',
+        completed: false,
         taskContent: taskContent,
         editing: context.state.editing,
         z_createdAt: myShaped,
@@ -95,6 +111,25 @@ export default new Vuex.Store({
       }).catch(error => {
         // エラーが発生した場合の処理
         console.error("Error writing document: ", error.message);
+      });
+    },
+    addNavItemForFirestore(context, navData) {
+      firebase.firestore().collection("navItems").add({
+        newNavOpen: navData.newNavOpen,
+        navOpen: false,
+        editText: false,
+        navModalTitle: navData.navModalTitle,
+        navModalTextArea: navData.navModalTextArea,
+        uuid: context.state.userData.uuid,
+        docID: '',
+        z_createdAt: myShaped,
+        z_updatedAt: myShaped,
+      }).then(response => {
+        // ドキュメントの追加が成功した場合の処理
+        console.log('addNavItem run', response)
+      }).catch(error => {
+        // エラーが発生した場合の処理
+        console.error("addNavItem Error writing document: ", error.message);
       });
     },
     async addUserDataForFirebase(context, userData) {
@@ -150,16 +185,52 @@ export default new Vuex.Store({
         .update({
           iconURL: url,
           fileName: fileName,
+          z_updatedAt: myShaped,
         });
       })
       .catch((error) => {
         console.error('Error saving user data:', error.message);
       });
     },
+    updateCheckTaskForFirestore(context, task) {
+      firebase.firestore().collection("todos").doc(task.docID)
+      .update({
+        completed: task.completed,
+        z_updatedAt: myShaped,
+      })
+      .then(() => {
+        console.log("Document successfully updated!");
+        const taskData = []
+        taskData.push(task)
+        if(task.completed) {
+          context.dispatch('addArchiveTask', taskData)
+        } else {
+          context.dispatch('reAddTask', taskData)
+        }
+      })
+      .catch((error) => {
+        console.error("Error updating document: ", error.message);
+      });
+    },
+    updateLimitForFirestore(context, task) {
+      console.log("updateLimitForFirestore");
+      firebase.firestore().collection("todos").doc(task.docID)
+      .update({
+        dateLimit: task.dateLimit,
+        z_updatedAt: myShaped,
+      })
+      .then(() => {
+        console.log("updateLimitForFirestore successfully updated!", context);
+      })
+      .catch((error) => {
+        console.error("Error updating document: ", error.message);
+      });
+    },
     updateEmail(context, newEmail) {
       firebase.firestore().collection("users").doc(context.state.userData.docID)
       .update({
-        email: newEmail
+        email: newEmail,
+        z_updatedAt: myShaped,
       })
       .then(() => {
         console.log("Document successfully updated!");
@@ -184,8 +255,30 @@ export default new Vuex.Store({
       const password = prompt('パスワードを入力してください');
       return firebase.auth.EmailAuthProvider.credential(email, password);
     },
+    addArchiveTask(context, taskData) {
+      context.commit('addArchiveTask', taskData)
+    },
+    reAddTask(context, taskData) {
+      context.commit('reAddTask', taskData)
+    },
+    sortTasks(context, data) {
+      const {tasksData, archiveTasksData} = data
+      console.log('sortTasks', context)
+      tasksData.sort(function(x, y) {
+        return new Date(x.dateLimit) - new Date(y.dateLimit);
+      })
+      archiveTasksData.sort(function(x, y) {
+        // sort基準はcheckした順
+        return new Date(x.z_updatedAt) - new Date(y.z_updatedAt);
+      })
+    },
+    sortNavItems(context, navData) { //!next
+      console.log('sortNavItems', context, navData)
+      navData.sort(function(x, y) {
+        return new Date(x.z_updatedAt) - new Date(y.z_updatedAt);
+      })
+    },
     fetchTodoData(context) {
-      // context.state.tasks = [];
       console.log('fetchTodoData', context.state.userData);
       if(!context.state.userData.email) {
         console.log('fetchTodoData: userData.email is empty');
@@ -195,6 +288,7 @@ export default new Vuex.Store({
         .then((querySnapshot) => {
           console.log('フェッチTODOデータ run')
           const tasksData = []
+          const archiveTasksData = []
           querySnapshot.forEach((doc) => {
             const data = {
               ...doc.data(),
@@ -202,9 +296,43 @@ export default new Vuex.Store({
             }
             console.log('fetchTodoData run', doc.id, " => ", doc.data());
             console.log('フェッチTODOデータ run', tasksData);
-            tasksData.push(data)
+            if(!doc.data().completed) { //! 配列の内容を特定の条件で絞り込む = filterメソッドを使用する。に書き換える。p138
+              console.log('if run', doc.data().completed)
+              tasksData.push(data)
+            } else {
+              console.log('else run', doc.data().completed)
+              archiveTasksData.push(data)
+            }
           });
           context.commit('setTasksData', tasksData);
+          context.commit('setArchiveTasksData', archiveTasksData);
+          context.dispatch('sortTasks', {tasksData: tasksData ,archiveTasksData: archiveTasksData})
+        })
+        .catch((error) => {
+          console.error("Error getting documents: ", error.message);
+        });
+      }
+    },
+    fetchNavItemData(context) {
+      console.log('fetchNavItemData', context.state.userData);
+      if(!context.state.userData.email) {
+        console.log('fetchNavItemData: userData.email is empty');
+        return
+      } else {
+        firebase.firestore().collection("navItems").where("uuid", "==", context.state.userData.uuid).get()
+        .then((querySnapshot) => {
+          console.log('フェッチnavItemデータ run')
+          const navData = []
+          querySnapshot.forEach((doc) => {
+            const data = {
+              ...doc.data(),
+              docID: doc.id
+            }
+            console.log('fetchNavData run', doc.id, " => ", doc.data());
+            navData.push(data)
+          });
+          context.commit('setNavData', navData);
+          context.dispatch('sortNavItems', navData);
         })
         .catch((error) => {
           console.error("Error getting documents: ", error.message);
@@ -221,6 +349,7 @@ export default new Vuex.Store({
           context.commit('updateUserData', { data: doc.data(), id: doc.id })
           context.dispatch('fetchIconImage')
           context.dispatch('fetchTodoData')
+          context.dispatch('fetchNavItemData')
         } else {
           console.log("No such document!");
         }
@@ -229,10 +358,11 @@ export default new Vuex.Store({
       });
     },
     fetchIconImage(context) {
+        console.log('フェッチイメージ run', context)
       firebase.storage().ref().child(`icons/${context.state.userData.fileName}`).getDownloadURL()
       .then((url) => {
         context.commit('updateIconURL', url)
-        console.log('fetchImage run', url)
+        console.log('フェッチイメージ run', url)
       })
       .catch((error) => {
         switch (error.code) {
@@ -276,6 +406,4 @@ export default new Vuex.Store({
       });
     },
   },
-  modules: {
-  }
 })

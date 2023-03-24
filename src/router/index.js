@@ -11,6 +11,11 @@ const routes = [
     component: HomeView
   },
   {
+    path: '/SignIn',
+    name: 'SignIn',
+    component: () => import('../views/SignIn.vue')
+  },
+  {
     path: '/SettingProfile',
     name: 'SettingProfile',
     component: () => import('../views/SettingProfile.vue')
@@ -21,9 +26,9 @@ const routes = [
     component: () => import('../views/MyPage.vue')
   },
   {
-    path: '/SignIn',
-    name: 'SignIn',
-    component: () => import('../views/SignIn.vue')
+    path: '/AllArchive',
+    name: 'AllArchive',
+    component: () => import('../views/AllArchive.vue')
   },
 ]
 
