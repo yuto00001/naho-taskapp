@@ -149,16 +149,29 @@ export default {
       }
     },
     resetPass() {
-      if(window.confirm('パスワードの再設定用メールを送信しますか？')) {
-        const credential = this.$store.dispatch('promptForCredentials');
-        firebase.auth().currentUser.reauthenticateWithCredential(credential) //!check
-        .then(() => {
-          this.$store.dispatch('resetPass')
-        }).catch((error) => {
-          console.error(error.message);
-        });
+      if (window.confirm('パスワードの再設定用メールを送信しますか？')) {
+        const email = prompt('メールアドレスを入力してください');
+        firebase.auth().sendPasswordResetEmail(email)
+          .then(() => {
+            alert('再設定用メールを送信しました')
+          })
+          .catch((error) => {
+            alert('再設定用メールを送信できませんでした')
+            console.error("再設定用メールを送信できませんでした", error.message);
+          });
       }
     },
+    // resetPass() {
+    //   if(window.confirm('パスワードの再設定用メールを送信しますか？')) {
+    //     const credential = this.$store.dispatch('promptForCredentials');
+    //     firebase.auth().currentUser.reauthenticateWithCredential(credential) //!check
+    //     .then(() => {
+    //       this.$store.dispatch('resetPass')
+    //     }).catch((error) => {
+    //       console.error(error.message);
+    //     });
+    //   }
+    // },
   },
   created() {
     console.log('created run')

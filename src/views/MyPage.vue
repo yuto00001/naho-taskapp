@@ -24,28 +24,29 @@
           <div v-if="navData.newNavOpen" class="nav-modal">
             <div class="nav-input">
               <input type="text" class="navModalTitle" v-model="navData.navModalTitle" placeholder="Title">
-              <input type="text" class="navModalTextArea" v-model="navData.navModalTextArea" placeholder="Text Area">
+              <textarea class="navModalTextArea" v-model="navData.navModalTextArea" cols="30" rows="10"></textarea>
             </div>
             <button @click="closeNewTextStatus">キャンセル</button>
           </div>
         </article>
-        <article v-for="(memo, index) in navMemoValue" :key="index" @click.stop>
-          <div v-if="memo.navOpen" @click="closeNavModal(memo)" class="back-bord"></div>
-          <p @click="openMemoEdit(memo)">{{ memo.navModalTitle }}</p>
-          <div v-if="memo.navOpen" class="nav-modal">
-
-            <div v-if="!memo.editText" @click="editTextStatus(memo)" class="nav-input">
-              <h2>{{ memo.navModalTitle }}</h2>
-              <p class="nav-textArea">{{ memo.navModalTextArea }}</p>
+        <article @click.stop>
+          <draggable :options="options">
+            <div v-for="(memo, index) in navMemoValue" :key="index" class="memo">
+              <div v-if="memo.navOpen" @click="closeNavModal(memo)" class="back-bord"></div>
+              <p @click="openMemoEdit(memo)">{{ memo.navModalTitle }}</p>
+              <div v-if="memo.navOpen" class="nav-modal">
+                <div v-if="!memo.editText" @click="editTextStatus(memo)" class="nav-input">
+                  <h2>{{ memo.navModalTitle }}</h2>
+                  <pre class="nav-textArea">{{ memo.navModalTextArea }}</pre>
+                </div>
+                <div v-if="memo.editText" class="nav-input">
+                  <input type="text" class="navModalTitle" v-model="memo.navModalTitle" placeholder="Title">
+                  <textarea class="navModalTextArea" v-model="memo.navModalTextArea" cols="30" rows="10"></textarea>
+                </div>
+                <button @click="deleteNavItem(memo)">削除</button>
+              </div>
             </div>
-
-            <div v-if="memo.editText" class="nav-input">
-              <input type="text" class="navModalTitle" v-model="memo.navModalTitle" placeholder="Title">
-              <input type="text" class="navModalTextArea" v-model="memo.navModalTextArea" placeholder="Text Area">
-            </div>
-
-            <button @click="deleteNavItem(memo)">削除</button>
-          </div>
+          </draggable>
         </article>
       </div>
     </section>
@@ -74,7 +75,7 @@
               </div>
               <div v-else class="nav-input">
                 <input type="text" class="navModalTitle" v-model="task.taskContent" placeholder="Task">
-                <input type="text" class="navModalTextArea" v-model="task.taskModalTextArea" placeholder="Text Area">
+                <textarea class="taskModalTextArea" v-model="task.taskModalTextArea" cols="30" rows="10"></textarea>
               </div>
               <button @click="deleteTask(task)">削除</button>
             </div>
@@ -106,7 +107,7 @@
               </div>
               <div v-else class="nav-input">
                 <input type="text" class="navModalTitle" v-model="task.taskContent" placeholder="Task">
-                <input type="text" class="navModalTextArea" v-model="task.taskModalTextArea" placeholder="Text Area">
+              <textarea class="taskModalTextArea" v-model="navData.taskModalTextArea" cols="30" rows="10"></textarea>
               </div>
               <button @click="deleteTask(task)">削除</button>
             </div>
@@ -117,6 +118,7 @@
       <div class="input-area">
         <input type="text" v-model="taskContent">
         <button @click="addTodo()">追加</button>
+
       </div>
     </section>
   </div>
@@ -124,8 +126,12 @@
 <script>
 import firebase from "firebase/app";
 import { mapActions } from 'vuex';
-
-
+import axios from 'axios';
+import draggable from 'vuedraggable'
+// const CollectionURL = 'https://firestore.googleapis.com/v1/projects/task-app-64bfb/databases/(default)/documents'
+// const usersCollectionURL = CollectionURL + "/users";
+// const todosCollectionURL = CollectionURL + "/todos";
+// const navItemsCollectionURL = CollectionURL + "/navItems";
 
 
 const toDate = firebase.firestore.Timestamp.now().toDate();
@@ -136,6 +142,7 @@ const myShaped = format(toDate, 'yyyyMMddHHmmss');
 export default {
   name: 'MyPage',
   components: {
+    draggable
   },
   computed: {
     navMemoValue() {
@@ -150,6 +157,9 @@ export default {
   },
   data() {
     return {
+      options: {
+        animation: 200
+      },
       taskContent: '',
       selectedFile: null,
       navData: {
@@ -182,21 +192,57 @@ export default {
       console.log('new item modal close')
     },
     updateMemoData(memo) {
-      firebase.firestore().collection("navItems").doc(memo.docID).update({
-        taskContent: memo.taskContent,
-        taskModalTextArea: memo.taskModalTextArea,
-        z_updatedAt: myShaped,
-      })
-      .then(() => {
-        console.log("editEnd run");
-      })
-      .catch((error) => {
-        console.error("Error updating document: ", error);
+      axios.get("https://firestore.googleapis.com/v1/projects/task-app-64bfb/databases/(default)/documents/navItems")
+      .then(response => {
+        const navItems = response.data.documents;
+
+        const targetNavItem = navItems.find(item => {
+          return item.fields.z_createdAt.stringValue === memo.z_createdAt;
+        });
+
+        if (targetNavItem) {
+          const fullPath = targetNavItem.name;
+          const documentId = fullPath.split('/').pop();
+          console.log('update get fullpath cut', documentId);
+
+          const updateMaskParams = [
+            "updateMask.fieldPaths=navModalTitle",
+            "updateMask.fieldPaths=navModalTextArea",
+            "updateMask.fieldPaths=z_updatedAt"
+          ].join('&');
+
+          axios.patch(
+            `https://firestore.googleapis.com/v1/projects/task-app-64bfb/databases/(default)/documents/navItems/${documentId}?${updateMaskParams}`,
+            {
+              fields: {
+                navModalTitle: {
+                  stringValue: memo.navModalTitle,
+                },
+                navModalTextArea: {
+                  stringValue: memo.navModalTextArea,
+                },
+                z_updatedAt: {
+                  stringValue: myShaped,
+                },
+              },
+            }
+          )
+          .then(() => {
+            console.log("editEnd run");
+          })
+          .catch((error) => {
+            console.error("Error updating document: ", error.response.data);
+          });
+        } else {
+          console.log('No matching data found');
+        }
       });
     },
+
+
     addNavItem() {
       if(!this.navData.navModalTitle) {
-        return
+        this.navData.newNavOpen = false;
       } else {
         console.log('addNavItem run', this.navData)
         this.addNavItemForFirestore(this.navData)
@@ -207,12 +253,29 @@ export default {
       if(!confirm('本当に削除しますか？')) {
         return
       } else {
-        firebase.firestore().collection("navItems").doc(memo.docID).delete()
-        .then(() => {
-          alert("memoを削除しました");
-          memo.navOpen = false
-        }).catch((error) => {
-          console.error("memo Error removing document: ", error);
+        axios.get("https://firestore.googleapis.com/v1/projects/task-app-64bfb/databases/(default)/documents/navItems")
+        .then(response => {
+          const navItems = response.data.documents;
+          const targetNavItems = navItems.find(item => {
+            return item.fields.z_createdAt.stringValue === memo.z_createdAt;
+          });
+          if (targetNavItems) {
+            const fullPath = targetNavItems.name;
+            const documentId = fullPath.split('/').pop();
+            axios.delete(
+              `https://firestore.googleapis.com/v1/projects/task-app-64bfb/databases/(default)/documents/navItems/${documentId}`
+            )
+            .then(() => {
+              memo.navOpen = false
+              // memo 配列から削除されたタスクを削除
+              this.$store.commit('removeNavItem', memo);
+            })
+            .catch((error) => {
+              console.error("Error delete document: ", error.response.data);
+            });
+          } else {
+            console.log('No matching data found');
+          }
         });
       }
     },
@@ -221,10 +284,6 @@ export default {
 
     handleCheckboxChange(task) {
       console.log('task.completed', task.completed)
-      this.switchTaskCheck(task)
-    },
-    switchTaskCheck(task) {
-      console.log('archive run', task.completed)
       this.$store.dispatch('updateCheckTaskForFirestore', task)
     },
     dateLimitSet(task) {
@@ -241,6 +300,7 @@ export default {
     addTodo() {
       console.log('addTodaaaao run')
       this.addTodoForFirebase(this.taskContent)
+      this.taskContent = ''
     },
     taskOpen(task) {
       task.taskOpen = true
@@ -250,31 +310,82 @@ export default {
       task.editing = true
     },
     editEnd(task) {
-      firebase.firestore().collection("todos").doc(task.docID).update({
-        taskContent: task.taskContent,
-        taskModalTextArea: task.taskModalTextArea,
-        z_updatedAt: myShaped,
-      })
-      .then(() => {
-        console.log("editEnd run");
-        task.taskOpen = false
-        task.editing = false
-      })
-      .catch((error) => {
-        console.error("Error updating document: ", error);
+      axios.get("https://firestore.googleapis.com/v1/projects/task-app-64bfb/databases/(default)/documents/todos")
+      .then(response => {
+        const todos = response.data.documents;
+
+        const targetTodo = todos.find(item => {
+          return item.fields.z_createdAt.stringValue === task.z_createdAt;
+        });
+
+        if (targetTodo) {
+          const fullPath = targetTodo.name;
+          const documentId = fullPath.split('/').pop();
+          console.log('update get fullpath cut', documentId);
+
+          const updateMaskParams = [
+            "updateMask.fieldPaths=taskContent",
+            "updateMask.fieldPaths=taskModalTextArea",
+            "updateMask.fieldPaths=z_updatedAt"
+          ].join('&');
+
+          axios.patch(
+            `https://firestore.googleapis.com/v1/projects/task-app-64bfb/databases/(default)/documents/todos/${documentId}?${updateMaskParams}`,
+            {
+              fields: {
+                taskContent: {
+                  stringValue: task.taskContent,
+                },
+                taskModalTextArea: {
+                  stringValue: task.taskModalTextArea,
+                },
+                z_updatedAt: {
+                  stringValue: myShaped,
+                },
+              },
+            }
+          )
+          .then(() => {
+            console.log("editEnd run");
+            task.taskOpen = false
+            task.editing = false
+          })
+          .catch((error) => {
+            console.error("Error updating document: ", error.response.data);
+          });
+        } else {
+          console.log('No matching data found');
+        }
       });
     },
     deleteTask(task) {
       if(!confirm('このtaskを削除しますか？')) {
         return
       } else {
-        firebase.firestore().collection("todos").doc(task.docID).delete()
-        .then(() => {
-          alert("todoを削除しました");
-          task.taskOpen = false
-          task.editing = false
-        }).catch((error) => {
-          console.error("Error removing document: ", error);
+        axios.get("https://firestore.googleapis.com/v1/projects/task-app-64bfb/databases/(default)/documents/todos")
+        .then(response => {
+          const todos = response.data.documents;
+          const targetTodo = todos.find(item => {
+            return item.fields.z_createdAt.stringValue === task.z_createdAt;
+          });
+          if (targetTodo) {
+            const fullPath = targetTodo.name;
+            const documentId = fullPath.split('/').pop();
+            axios.delete(
+              `https://firestore.googleapis.com/v1/projects/task-app-64bfb/databases/(default)/documents/todos/${documentId}`
+            )
+            .then(() => {
+              task.taskOpen = false
+              task.editing = false
+              // tasks 配列から削除されたタスクを削除
+              this.$store.commit('removeTask', task);
+            })
+            .catch((error) => {
+              console.error("Error delete document: ", error.response.data);
+            });
+          } else {
+            console.log('No matching data found');
+          }
         });
       }
     },
@@ -288,15 +399,21 @@ export default {
 </script>
 
 <style scoped>
+.memo:hover {
+  cursor: grab;
+}
+.memo:active {
+  cursor: grabbing;
+}
 .nav-modal {
   background-color: blanchedalmond;
   position: absolute;
-  top: 5vh;
+  top: 25vh;
   right: 0;
   left: 0;
   margin: 0 auto;
-  height: 85vh;
-  width: 80vw;
+  height: 65vh;
+  width: 75vw;
   z-index: 20;
   display: flex;
   flex-direction: column;
@@ -307,7 +424,7 @@ export default {
   height: 90%;
   margin: 5% 0;
   display: flex;
-  align-items: center;
+  text-align: initial;
 }
 
 .back-bord {
@@ -340,7 +457,8 @@ export default {
   height: 5%;
 }
 .navModalTextArea {
-  height: 88%;
+  height: 83%;
+  padding: 5% 2%;
 }
 
 .todos-area {

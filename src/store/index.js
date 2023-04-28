@@ -1,11 +1,14 @@
 import Vue from 'vue'
 import Vuex from 'vuex'
-// import axios from 'axios'
 import firebase from "firebase/app";
 import "firebase/firestore";
 import "firebase/auth";
 import "firebase/storage";
-
+import axios from 'axios';
+const CollectionURL = 'https://firestore.googleapis.com/v1/projects/task-app-64bfb/databases/(default)/documents'
+// const usersCollectionURL = CollectionURL + "/users";
+// const navItemsCollectionURL = CollectionURL + "/navItems";
+const todosCollectionURL = CollectionURL + "/todos";
 
 import { format } from 'date-fns';
 const toDate = firebase.firestore.Timestamp.now().toDate();
@@ -39,13 +42,34 @@ export default new Vuex.Store({
   },
   mutations: { //state変更できる唯一の手段。この中は同期的。
     //? なぜmutationを経由してstateを変更することしかしてはいけないのか
-    setTasksData(state, tasksData) {
+    addTasksData(state, newTaskData) {
+      state.tasks.push(newTaskData)
+    },
+    removeTask(state, task) {
+      const taskIndex = state.tasks.findIndex(t => t.docID === task.docID);
+      if (taskIndex !== -1) {
+        state.tasks.splice(taskIndex, 1);
+      }
+    },
+    sortTasksData(state, tasksData) {
       state.tasks = tasksData
     },
-    setArchiveTasksData(state, archiveTasksData) {
-      state.archiveTasks = archiveTasksData
+    sortArchiveTasksData(state, tasksData) {
+      state.archiveTasks = tasksData
     },
     setNavData(state, navData) {
+      state.navData = navData
+    },
+    addNavData(state, navData) {
+      state.navData.push(navData)
+    },
+    removeNavItem(state, memo) {
+      const memoIndex = state.navData.findIndex(t => t.docID === memo.docID);
+      if (memoIndex !== -1) {
+        state.navData.splice(memoIndex, 1);
+      }
+    },
+    sortNavData(state, navData) {
       state.navData = navData
     },
     updateUserData(state, doc) {
@@ -70,10 +94,18 @@ export default new Vuex.Store({
       state.userData.uuid = uuid
     },
     addArchiveTask(state, taskData) {
-      state.archiveTasks = taskData
+      state.archiveTasks.push(taskData)
+      const taskIndex = state.tasks.findIndex(task => task.z_createdAt === taskData.z_createdAt);
+      if (taskIndex !== -1) {
+        state.tasks.splice(taskIndex, 1);
+      }
     },
     reAddTask(state, taskData) {
-      state.tasks = taskData
+      state.tasks.push(taskData)
+      const taskIndex = state.archiveTasks.findIndex(task => task.z_createdAt === taskData.z_createdAt);
+      if (taskIndex !== -1) {
+        state.archiveTasks.splice(taskIndex, 1);
+      }
     },
     toggleInput(state) {
       state.editing = !state.editing;
@@ -83,52 +115,121 @@ export default new Vuex.Store({
 
     addTodoForFirebase(context, taskContent) {
       // todo axiosを用いてデータのやり取りをする（部分更新）
-      // axios.post("https://firestore.googleapis.com/v1/projects/task-app-64bfb/databases/(default)/documents/todos", { //! なぜかうまく送信できない 400error = URLに問題あり?
-      //   fields: {
-      //     userName: context.state.userData.userName,
-      //     email: context.state.userData.email,
-      //     icon: '',
-      //     uuid: context.state.userData.uuid,
-      //     docID: '',
-      //     taskContent: taskContent,
-      //     editing: context.state.editing,
-      //     z_createdAt: myShaped,
-      //     z_updatedAt: myShaped,
-      //   }
-      firebase.firestore().collection("todos").add({
-        userName: context.state.userData.userName,
-        email: context.state.userData.email,
-        uuid: context.state.userData.uuid,
-        docID: '',
-        completed: false,
-        taskOpen: false,
-        taskModalTextArea: '',
-        taskContent: taskContent,
-        editing: context.state.editing,
-        z_createdAt: myShaped,
-        z_updatedAt: myShaped,
-      }).then(response => {
+      axios.post(
+        "https://firestore.googleapis.com/v1/projects/task-app-64bfb/databases/(default)/documents/todos",
+        {
+          fields: {
+            userName: {
+              stringValue: context.state.userData.userName
+            },
+            email: {
+              stringValue: context.state.userData.email
+            },
+            uuid: {
+              stringValue: context.state.userData.uuid
+            },
+            docID: {
+              stringValue: ''
+            },
+            taskModalTextArea: {
+              stringValue: ''
+            },
+            taskContent: {
+              stringValue: taskContent
+            },
+            z_createdAt: {
+              stringValue: myShaped
+            },
+            z_updatedAt: {
+              stringValue: myShaped
+            },
+            editing: {
+              booleanValue: context.state.editing
+            },
+            completed: {
+              booleanValue: false
+            },
+            taskOpen: {
+              booleanValue: false
+            },
+          }
+        }
+      ).then(response => {
         // ドキュメントの追加が成功した場合の処理
         console.log('addTodo run', response)
+        const documentId = response.data.name.split('/').pop();
+        axios.get(
+          `https://firestore.googleapis.com/v1/projects/task-app-64bfb/databases/(default)/documents/todos/${documentId}`
+        )
+        .then(res => {
+          const fields = res.data.fields;
+          const fieldValues = {};
+          for (const key in fields) {
+            fieldValues[key] = Object.prototype.hasOwnProperty.call(fields[key], 'stringValue')
+              ? fields[key].stringValue
+              : fields[key].booleanValue;
+          }
+          console.log(fieldValues);
+          context.commit('addTasksData', fieldValues);
+        });
       }).catch(error => {
         // エラーが発生した場合の処理
-        console.error("Error writing document: ", error.message);
+        console.error("todo post Error ", error.message, todosCollectionURL);
       });
     },
     addNavItemForFirestore(context, navData) {
-      firebase.firestore().collection("navItems").add({
-        newNavOpen: navData.newNavOpen,
-        navOpen: false,
-        editText: false,
-        navModalTitle: navData.navModalTitle,
-        navModalTextArea: navData.navModalTextArea,
-        uuid: context.state.userData.uuid,
-        docID: '',
-        z_createdAt: myShaped,
-        z_updatedAt: myShaped,
-      }).then(response => {
+      axios.post(
+        "https://firestore.googleapis.com/v1/projects/task-app-64bfb/databases/(default)/documents/navItems",
+        {
+          fields: {
+            navModalTitle: {
+              stringValue: navData.navModalTitle
+            },
+            navModalTextArea:  {
+              stringValue: navData.navModalTextArea
+            },
+            uuid: {
+              stringValue: context.state.userData.uuid
+            },
+            docID: {
+              stringValue:  ''
+            },
+            z_createdAt: {
+              stringValue: myShaped
+            },
+            z_updatedAt: {
+              stringValue: myShaped
+            },
+            navOpen: {
+              booleanValue: false
+            },
+            editText: {
+              booleanValue: false
+            },
+            newNavOpen: {
+              booleanValue: navData.newNavOpen
+            },
+          }
+        }
+      )
+      .then(response => {
         // ドキュメントの追加が成功した場合の処理
-        console.log('addNavItem run', response)
+        console.log('addTodo run', response)
+        const documentId = response.data.name.split('/').pop();
+        axios.get(
+          `https://firestore.googleapis.com/v1/projects/task-app-64bfb/databases/(default)/documents/navItems/${documentId}`
+        )
+        .then(res => {
+          const fields = res.data.fields;
+          const fieldValues = {};
+          for (const key in fields) {
+            fieldValues[key] = Object.prototype.hasOwnProperty.call(fields[key], 'stringValue')
+              ? fields[key].stringValue
+              : fields[key].booleanValue;
+          }
+          console.log(fieldValues);
+          context.commit('addNavData', fieldValues);
+        });
       }).catch(error => {
         // エラーが発生した場合の処理
         console.error("addNavItem Error writing document: ", error.message);
@@ -195,37 +296,104 @@ export default new Vuex.Store({
       });
     },
     updateCheckTaskForFirestore(context, task) {
-      firebase.firestore().collection("todos").doc(task.docID)
-      .update({
-        completed: task.completed,
-        z_updatedAt: myShaped,
-      })
-      .then(() => {
-        console.log("Document successfully updated!");
-        const taskData = []
-        taskData.push(task)
-        if(task.completed) {
-          context.dispatch('addArchiveTask', taskData)
+      axios.get("https://firestore.googleapis.com/v1/projects/task-app-64bfb/databases/(default)/documents/todos")
+      .then(response => {
+        const todos = response.data.documents;
+        const targetTodo = todos.find(item => {
+          return item.fields.z_createdAt.stringValue === task.z_createdAt;
+        });
+        if (targetTodo) {
+          const fullPath = targetTodo.name;
+          const documentId = fullPath.split('/').pop();
+          const updateMaskParams = [
+            "updateMask.fieldPaths=completed",
+            "updateMask.fieldPaths=z_updatedAt"
+          ].join('&');
+
+          axios.patch(
+            `https://firestore.googleapis.com/v1/projects/task-app-64bfb/databases/(default)/documents/todos/${documentId}?${updateMaskParams}`,
+            {
+              fields: {
+                completed: {
+                  booleanValue: task.completed,
+                },
+                z_updatedAt: {
+                  stringValue: myShaped,
+                },
+              },
+            }
+          )
+          .then((res) => {
+            const fields = res.data.fields;
+            const fieldValues = {};
+            for (const key in fields) {
+              fieldValues[key] = Object.prototype.hasOwnProperty.call(fields[key], 'stringValue')
+                ? fields[key].stringValue
+                : fields[key].booleanValue;
+            }
+            console.log("Document successfully updated!!", fieldValues);
+            // Promiseを返す
+            return new Promise((resolve) => {
+              if(task.completed) {
+                context.commit('addArchiveTask', fieldValues);
+              } else {
+                context.commit('reAddTask', fieldValues);
+              }
+              resolve(); // commitが完了したらresolve()を呼び出す
+            });
+          })
+          .then(() => {
+            // 前のthenブロックでcommitが完了した後、dispatchを実行
+            context.dispatch('sortUpdatedTasks');
+            context.dispatch('sortUpdatedArchiveTasks');
+          })
+          .catch((error) => {
+            console.error("Error updating document: ", error.response.data);
+          });
         } else {
-          context.dispatch('reAddTask', taskData)
+          console.log('No matching data found');
         }
-      })
-      .catch((error) => {
-        console.error("Error updating document: ", error.message);
       });
     },
     updateLimitForFirestore(context, task) {
       console.log("updateLimitForFirestore");
-      firebase.firestore().collection("todos").doc(task.docID)
-      .update({
-        dateLimit: task.dateLimit,
-        z_updatedAt: myShaped,
-      })
-      .then(() => {
-        console.log("updateLimitForFirestore successfully updated!", context);
-      })
-      .catch((error) => {
-        console.error("Error updating document: ", error.message);
+      axios.get("https://firestore.googleapis.com/v1/projects/task-app-64bfb/databases/(default)/documents/todos")
+      .then(response => {
+        const todos = response.data.documents;
+        const targetTodo = todos.find(item => {
+          return item.fields.z_createdAt.stringValue === task.z_createdAt;
+        });
+        if (targetTodo) {
+          const fullPath = targetTodo.name;
+          const documentId = fullPath.split('/').pop();
+          const updateMaskParams = [
+            "updateMask.fieldPaths=dateLimit",
+            "updateMask.fieldPaths=z_updatedAt"
+          ].join('&');
+          axios.patch(
+            `https://firestore.googleapis.com/v1/projects/task-app-64bfb/databases/(default)/documents/todos/${documentId}?${updateMaskParams}`,
+            {
+              fields: {
+                dateLimit: {
+                  stringValue: task.dateLimit,
+                },
+                z_updatedAt: {
+                  stringValue: myShaped,
+                },
+              },
+            }
+          )
+          .then((res) => {
+            console.log("updateLimitForFirestore successfully updated!", res);
+            context.dispatch('sortUpdatedTasks');
+            context.dispatch('sortUpdatedArchiveTasks');
+          })
+          .catch((error) => {
+            console.error("Error updating document: ", error.response.data);
+          });
+        } else {
+          console.log('No matching data found');
+        }
       });
     },
     updateEmail(context, newEmail) {
@@ -257,28 +425,71 @@ export default new Vuex.Store({
       const password = prompt('パスワードを入力してください');
       return firebase.auth.EmailAuthProvider.credential(email, password);
     },
-    addArchiveTask(context, taskData) {
-      context.commit('addArchiveTask', taskData)
-    },
-    reAddTask(context, taskData) {
-      context.commit('reAddTask', taskData)
-    },
-    sortTasks(context, data) {
-      const {tasksData, archiveTasksData} = data
-      console.log('sortTasks', context)
-      tasksData.sort(function(x, y) {
-        return new Date(x.dateLimit) - new Date(y.dateLimit);
+    sortUpdatedTasks(context) {
+      // Firestore クエリでタスク全てを取得
+      firebase.firestore().collection("todos").where("completed", "==", false).get()
+      .then(querySnapshot => {
+        const allTodos = querySnapshot.docs.map(doc => doc.data());
+        // タスクを日付順にソート
+        allTodos.sort(function(x, y) {
+          if (!Object.prototype.hasOwnProperty.call(x, 'dateLimit')) {
+            return -1;
+          }
+          if (!Object.prototype.hasOwnProperty.call(y, 'dateLimit')) {
+            return 1;
+          }
+          return new Date(x.dateLimit) - new Date(y.dateLimit);
+        });
+        // ソートされたタスクをストアに反映
+        context.commit('sortTasksData', allTodos);
       })
-      archiveTasksData.sort(function(x, y) {
-        // sort基準はcheckした順
-        return new Date(x.z_updatedAt) - new Date(y.z_updatedAt);
-      })
+      .catch(error => {
+        console.error("Error fetching tasks: ", error.message);
+      });
     },
-    sortNavItems(context, navData) { //!next
-      console.log('sortNavItems', context, navData)
-      navData.sort(function(x, y) {
-        return new Date(x.z_updatedAt) - new Date(y.z_updatedAt);
+    sortUpdatedArchiveTasks(context) {
+      // Firestore クエリでタスク全てを取得
+      firebase.firestore().collection("todos").where("completed", "==", true).get()
+      .then(querySnapshot => {
+        const allTodos = querySnapshot.docs.map(doc => doc.data());
+        // タスクを日付順にソート
+        allTodos.sort(function(x, y) {
+          if (!Object.prototype.hasOwnProperty.call(x, 'dateLimit')) {
+            return -1;
+          }
+          if (!Object.prototype.hasOwnProperty.call(y, 'dateLimit')) {
+            return 1;
+          }
+          return new Date(x.dateLimit) - new Date(y.dateLimit);
+        });
+        // ソートされたタスクをストアに反映
+        context.commit('sortArchiveTasksData', allTodos);
       })
+      .catch(error => {
+        console.error("Error fetching tasks: ", error.message);
+      });
+    },
+    sortNavItems(context) { //!　並べ替えを想定する場合、作成日ではなく、配列番号で管理すべき。まずは、どのように配列番号を取得するか。取得できたら、次はグリップした際にupdateが回るように関数を設定する。その後、フェッチの無駄を確認し削除。
+      // Firestore クエリでタスク全てを取得
+      firebase.firestore().collection("navItems").get()
+      .then(querySnapshot => {
+        const allTodos = querySnapshot.docs.map(doc => doc.data());
+        // タスクをz_createdAt順にソート
+        allTodos.sort(function(x, y) {
+          if (!Object.prototype.hasOwnProperty.call(x, 'z_createdAt')) {
+            return -1;
+          }
+          if (!Object.prototype.hasOwnProperty.call(y, 'z_createdAt')) {
+            return 1;
+          }
+          return new Date(x.z_createdAt) - new Date(y.z_createdAt);
+        });
+        // ソートされたタスクをストアに反映
+        context.commit('sortNavItems', allTodos);
+      })
+      .catch(error => {
+        console.error("Error fetching tasks: ", error.message);
+      });
     },
     fetchTodoData(context) {
       console.log('fetchTodoData', context.state.userData);
@@ -287,35 +498,17 @@ export default new Vuex.Store({
         return
       } else {
         firebase.firestore().collection("todos").where("uuid", "==", context.state.userData.uuid).get()
-        .then((querySnapshot) => {
+        .then(() => {
           console.log('フェッチTODOデータ run')
-          const tasksData = []
-          const archiveTasksData = []
-          querySnapshot.forEach((doc) => {
-            const data = {
-              ...doc.data(),
-              docID: doc.id,
-            }
-            console.log('fetchTodoData run', doc.id, " => ", doc.data());
-            console.log('フェッチTODOデータ run', tasksData);
-            if(!doc.data().completed) { //! 配列の内容を特定の条件で絞り込む = filterメソッドを使用する。に書き換える。p138
-              console.log('if run', doc.data().completed)
-              tasksData.push(data)
-            } else {
-              console.log('else run', doc.data().completed)
-              archiveTasksData.push(data)
-            }
-          });
-          context.commit('setTasksData', tasksData);
-          context.commit('setArchiveTasksData', archiveTasksData);
-          context.dispatch('sortTasks', {tasksData: tasksData ,archiveTasksData: archiveTasksData})
+          context.dispatch('sortUpdatedTasks');
+          context.dispatch('sortUpdatedArchiveTasks');
         })
         .catch((error) => {
           console.error("Error getting documents: ", error.message);
         });
       }
     },
-    fetchNavItemData(context) {
+    fetchNavItemData(context) { //! notthing muda??
       console.log('fetchNavItemData', context.state.userData);
       if(!context.state.userData.email) {
         console.log('fetchNavItemData: userData.email is empty');
@@ -334,7 +527,7 @@ export default new Vuex.Store({
             navData.push(data)
           });
           context.commit('setNavData', navData);
-          context.dispatch('sortNavItems', navData);
+          context.dispatch('sortNavItems');
         })
         .catch((error) => {
           console.error("Error getting documents: ", error.message);
@@ -389,19 +582,6 @@ export default new Vuex.Store({
           context.commit('addUuid', user.uid)
           console.log('onAuthStateChangedHandler run', user.uid, user)
           context.dispatch('fetchUserData')
-          // todo axiosを用いてデータのやり取りをする（部分更新）
-          // user.getIdToken().then(function(token) {
-          //   // getIdToken()は、Firebase Authから取得したトークンを取得するためのメソッド。取得したトークンを使用して、Firebaseの各種サービスに対してAPIリクエストを行うことが可能。
-          //   axios.get('https://firestore.googleapis.com/v1/projects/{task-app-64bfb}/databases/(default)/documents/{todos}', {
-          //     headers: {
-          //       'Authorization': 'Bearer ' + token
-          //     }
-          //   }).then(response => {
-          //     console.log('addTodo run', response)
-          //   }).catch(error => {
-          //     console.error("Error writing document: ", error.message);
-          //   });
-          // });
         } else {
           console.log('onAuthStateChangedHandler', 'User is signed out');
         }
