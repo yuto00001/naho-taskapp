@@ -30,23 +30,21 @@
           </div>
         </article>
         <article @click.stop>
-          <draggable :options="options">
-            <div v-for="(memo, index) in navMemoValue" :key="index" class="memo">
-              <div v-if="memo.navOpen" @click="closeNavModal(memo)" class="back-bord"></div>
-              <p @click="openMemoEdit(memo)">{{ memo.navModalTitle }}</p>
-              <div v-if="memo.navOpen" class="nav-modal">
-                <div v-if="!memo.editText" @click="editTextStatus(memo)" class="nav-input">
-                  <h2>{{ memo.navModalTitle }}</h2>
-                  <pre class="nav-textArea">{{ memo.navModalTextArea }}</pre>
-                </div>
-                <div v-if="memo.editText" class="nav-input">
-                  <input type="text" class="navModalTitle" v-model="memo.navModalTitle" placeholder="Title">
-                  <textarea class="navModalTextArea" v-model="memo.navModalTextArea" cols="30" rows="10"></textarea>
-                </div>
-                <button @click="deleteNavItem(memo)">削除</button>
+          <div v-for="(memo, index) in navMemoValue" :key="index" class="memo">
+            <div v-if="memo.navOpen" @click="closeNavModal(memo)" class="back-bord"></div>
+            <p @click="openMemoEdit(memo)">{{ memo.navModalTitle }}</p>
+            <div v-if="memo.navOpen" class="nav-modal">
+              <div v-if="!memo.editText" @click="editTextStatus(memo)" class="nav-input">
+                <h2>{{ memo.navModalTitle }}</h2>
+                <pre class="nav-textArea">{{ memo.navModalTextArea }}</pre>
               </div>
+              <div v-if="memo.editText" class="nav-input">
+                <input type="text" class="navModalTitle" v-model="memo.navModalTitle" placeholder="Title">
+                <textarea class="navModalTextArea" v-model="memo.navModalTextArea" cols="30" rows="10"></textarea>
+              </div>
+              <button @click="deleteNavItem(memo)">削除</button>
             </div>
-          </draggable>
+          </div>
         </article>
       </div>
     </section>
@@ -127,11 +125,9 @@
 import firebase from "firebase/app";
 import { mapActions } from 'vuex';
 import axios from 'axios';
-import draggable from 'vuedraggable'
-// const CollectionURL = 'https://firestore.googleapis.com/v1/projects/task-app-64bfb/databases/(default)/documents'
-// const usersCollectionURL = CollectionURL + "/users";
-// const todosCollectionURL = CollectionURL + "/todos";
-// const navItemsCollectionURL = CollectionURL + "/navItems";
+const CollectionURL = 'https://firestore.googleapis.com/v1/projects/task-app-64bfb/databases/(default)/documents'
+const todosCollectionURL = CollectionURL + "/todos";
+const navItemsCollectionURL = CollectionURL + "/navItems";
 
 
 const toDate = firebase.firestore.Timestamp.now().toDate();
@@ -141,9 +137,7 @@ const myShaped = format(toDate, 'yyyyMMddHHmmss');
 
 export default {
   name: 'MyPage',
-  components: {
-    draggable
-  },
+  components: {},
   computed: {
     navMemoValue() {
       return this.$store.state.navData
@@ -166,7 +160,7 @@ export default {
         newNavOpen: false,
         navModalTitle: '',
         navModalTextArea: '',
-      }
+      },
     }
   },
   methods: {
@@ -192,7 +186,7 @@ export default {
       console.log('new item modal close')
     },
     updateMemoData(memo) {
-      axios.get("https://firestore.googleapis.com/v1/projects/task-app-64bfb/databases/(default)/documents/navItems")
+      axios.get(navItemsCollectionURL)
       .then(response => {
         const navItems = response.data.documents;
 
@@ -212,7 +206,7 @@ export default {
           ].join('&');
 
           axios.patch(
-            `https://firestore.googleapis.com/v1/projects/task-app-64bfb/databases/(default)/documents/navItems/${documentId}?${updateMaskParams}`,
+            `${navItemsCollectionURL}/${documentId}?${updateMaskParams}`,
             {
               fields: {
                 navModalTitle: {
@@ -228,7 +222,7 @@ export default {
             }
           )
           .then(() => {
-            console.log("editEnd run");
+            this.$store.commit('sortNavData');
           })
           .catch((error) => {
             console.error("Error updating document: ", error.response.data);
@@ -247,13 +241,14 @@ export default {
         console.log('addNavItem run', this.navData)
         this.addNavItemForFirestore(this.navData)
         this.closeNewTextStatus()
+        this.$store.commit('sortNavData');
       }
     },
     deleteNavItem(memo) {
       if(!confirm('本当に削除しますか？')) {
         return
       } else {
-        axios.get("https://firestore.googleapis.com/v1/projects/task-app-64bfb/databases/(default)/documents/navItems")
+        axios.get(navItemsCollectionURL)
         .then(response => {
           const navItems = response.data.documents;
           const targetNavItems = navItems.find(item => {
@@ -263,12 +258,14 @@ export default {
             const fullPath = targetNavItems.name;
             const documentId = fullPath.split('/').pop();
             axios.delete(
-              `https://firestore.googleapis.com/v1/projects/task-app-64bfb/databases/(default)/documents/navItems/${documentId}`
+              `${navItemsCollectionURL}/${documentId}`
             )
             .then(() => {
               memo.navOpen = false
               // memo 配列から削除されたタスクを削除
               this.$store.commit('removeNavItem', memo);
+              this.$store.commit('sortNavData');
+              this.$store.dispatch('sortNavItems');
             })
             .catch((error) => {
               console.error("Error delete document: ", error.response.data);
@@ -279,7 +276,6 @@ export default {
         });
       }
     },
-
 
 
     handleCheckboxChange(task) {
@@ -310,7 +306,7 @@ export default {
       task.editing = true
     },
     editEnd(task) {
-      axios.get("https://firestore.googleapis.com/v1/projects/task-app-64bfb/databases/(default)/documents/todos")
+      axios.get(todosCollectionURL)
       .then(response => {
         const todos = response.data.documents;
 
@@ -330,7 +326,7 @@ export default {
           ].join('&');
 
           axios.patch(
-            `https://firestore.googleapis.com/v1/projects/task-app-64bfb/databases/(default)/documents/todos/${documentId}?${updateMaskParams}`,
+            `${todosCollectionURL}/${documentId}?${updateMaskParams}`,
             {
               fields: {
                 taskContent: {
@@ -362,7 +358,7 @@ export default {
       if(!confirm('このtaskを削除しますか？')) {
         return
       } else {
-        axios.get("https://firestore.googleapis.com/v1/projects/task-app-64bfb/databases/(default)/documents/todos")
+        axios.get(todosCollectionURL)
         .then(response => {
           const todos = response.data.documents;
           const targetTodo = todos.find(item => {
@@ -372,13 +368,15 @@ export default {
             const fullPath = targetTodo.name;
             const documentId = fullPath.split('/').pop();
             axios.delete(
-              `https://firestore.googleapis.com/v1/projects/task-app-64bfb/databases/(default)/documents/todos/${documentId}`
+              `${todosCollectionURL}/${documentId}`
             )
             .then(() => {
               task.taskOpen = false
               task.editing = false
               // tasks 配列から削除されたタスクを削除
               this.$store.commit('removeTask', task);
+              this.$store.dispatch('sortUpdatedTasks');
+              this.$store.dispatch('sortUpdatedArchiveTasks');
             })
             .catch((error) => {
               console.error("Error delete document: ", error.response.data);
@@ -399,12 +397,6 @@ export default {
 </script>
 
 <style scoped>
-.memo:hover {
-  cursor: grab;
-}
-.memo:active {
-  cursor: grabbing;
-}
 .nav-modal {
   background-color: blanchedalmond;
   position: absolute;

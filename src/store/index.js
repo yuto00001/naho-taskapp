@@ -6,8 +6,7 @@ import "firebase/auth";
 import "firebase/storage";
 import axios from 'axios';
 const CollectionURL = 'https://firestore.googleapis.com/v1/projects/task-app-64bfb/databases/(default)/documents'
-// const usersCollectionURL = CollectionURL + "/users";
-// const navItemsCollectionURL = CollectionURL + "/navItems";
+const navItemsCollectionURL = CollectionURL + "/navItems";
 const todosCollectionURL = CollectionURL + "/todos";
 
 import { format } from 'date-fns';
@@ -69,8 +68,10 @@ export default new Vuex.Store({
         state.navData.splice(memoIndex, 1);
       }
     },
-    sortNavData(state, navData) {
-      state.navData = navData
+    sortNavData(state) {
+      state.navData.sort(function(a, b) {
+        return a.navModalTitle.localeCompare(b.navModalTitle);
+      });
     },
     updateUserData(state, doc) {
       const {data, id} = doc
@@ -116,7 +117,7 @@ export default new Vuex.Store({
     addTodoForFirebase(context, taskContent) {
       // todo axiosを用いてデータのやり取りをする（部分更新）
       axios.post(
-        "https://firestore.googleapis.com/v1/projects/task-app-64bfb/databases/(default)/documents/todos",
+        todosCollectionURL,
         {
           fields: {
             userName: {
@@ -159,7 +160,7 @@ export default new Vuex.Store({
         console.log('addTodo run', response)
         const documentId = response.data.name.split('/').pop();
         axios.get(
-          `https://firestore.googleapis.com/v1/projects/task-app-64bfb/databases/(default)/documents/todos/${documentId}`
+          `${todosCollectionURL}/${documentId}`
         )
         .then(res => {
           const fields = res.data.fields;
@@ -179,7 +180,7 @@ export default new Vuex.Store({
     },
     addNavItemForFirestore(context, navData) {
       axios.post(
-        "https://firestore.googleapis.com/v1/projects/task-app-64bfb/databases/(default)/documents/navItems",
+        navItemsCollectionURL,
         {
           fields: {
             navModalTitle: {
@@ -217,7 +218,7 @@ export default new Vuex.Store({
         console.log('addTodo run', response)
         const documentId = response.data.name.split('/').pop();
         axios.get(
-          `https://firestore.googleapis.com/v1/projects/task-app-64bfb/databases/(default)/documents/navItems/${documentId}`
+          `${navItemsCollectionURL}/${documentId}`
         )
         .then(res => {
           const fields = res.data.fields;
@@ -228,7 +229,16 @@ export default new Vuex.Store({
               : fields[key].booleanValue;
           }
           console.log(fieldValues);
-          context.commit('addNavData', fieldValues);
+          return new Promise((resolve) => {
+            context.commit('addNavData', fieldValues);
+            resolve();
+          })
+        })
+        .then(() => {
+          context.commit('sortNavData');
+        })
+        .catch((error) => {
+          console.error("Error updating document: ", error.response.data);
         });
       }).catch(error => {
         // エラーが発生した場合の処理
@@ -296,7 +306,7 @@ export default new Vuex.Store({
       });
     },
     updateCheckTaskForFirestore(context, task) {
-      axios.get("https://firestore.googleapis.com/v1/projects/task-app-64bfb/databases/(default)/documents/todos")
+      axios.get(todosCollectionURL)
       .then(response => {
         const todos = response.data.documents;
         const targetTodo = todos.find(item => {
@@ -311,7 +321,7 @@ export default new Vuex.Store({
           ].join('&');
 
           axios.patch(
-            `https://firestore.googleapis.com/v1/projects/task-app-64bfb/databases/(default)/documents/todos/${documentId}?${updateMaskParams}`,
+            `${todosCollectionURL}/${documentId}?${updateMaskParams}`,
             {
               fields: {
                 completed: {
@@ -357,7 +367,7 @@ export default new Vuex.Store({
     },
     updateLimitForFirestore(context, task) {
       console.log("updateLimitForFirestore");
-      axios.get("https://firestore.googleapis.com/v1/projects/task-app-64bfb/databases/(default)/documents/todos")
+      axios.get(todosCollectionURL)
       .then(response => {
         const todos = response.data.documents;
         const targetTodo = todos.find(item => {
@@ -371,7 +381,7 @@ export default new Vuex.Store({
             "updateMask.fieldPaths=z_updatedAt"
           ].join('&');
           axios.patch(
-            `https://firestore.googleapis.com/v1/projects/task-app-64bfb/databases/(default)/documents/todos/${documentId}?${updateMaskParams}`,
+            `${todosCollectionURL}/${documentId}?${updateMaskParams}`,
             {
               fields: {
                 dateLimit: {
@@ -469,28 +479,7 @@ export default new Vuex.Store({
         console.error("Error fetching tasks: ", error.message);
       });
     },
-    sortNavItems(context) { //!　並べ替えを想定する場合、作成日ではなく、配列番号で管理すべき。まずは、どのように配列番号を取得するか。取得できたら、次はグリップした際にupdateが回るように関数を設定する。その後、フェッチの無駄を確認し削除。
-      // Firestore クエリでタスク全てを取得
-      firebase.firestore().collection("navItems").get()
-      .then(querySnapshot => {
-        const allTodos = querySnapshot.docs.map(doc => doc.data());
-        // タスクをz_createdAt順にソート
-        allTodos.sort(function(x, y) {
-          if (!Object.prototype.hasOwnProperty.call(x, 'z_createdAt')) {
-            return -1;
-          }
-          if (!Object.prototype.hasOwnProperty.call(y, 'z_createdAt')) {
-            return 1;
-          }
-          return new Date(x.z_createdAt) - new Date(y.z_createdAt);
-        });
-        // ソートされたタスクをストアに反映
-        context.commit('sortNavItems', allTodos);
-      })
-      .catch(error => {
-        console.error("Error fetching tasks: ", error.message);
-      });
-    },
+    //!sortはidで行う。dragする際に連番を与えて行う。連番のない要素は、先頭に追加。fetchされると、連番が再付与される(新たな要素を考慮した連番が付与)。取得できたら、次はグリップした際にupdateが回るように関数を設定する。その後、フェッチの無駄を確認し削除。
     fetchTodoData(context) {
       console.log('fetchTodoData', context.state.userData);
       if(!context.state.userData.email) {
@@ -526,8 +515,13 @@ export default new Vuex.Store({
             console.log('fetchNavData run', doc.id, " => ", doc.data());
             navData.push(data)
           });
-          context.commit('setNavData', navData);
-          context.dispatch('sortNavItems');
+          return new Promise((resolve) => {
+            context.commit('setNavData', navData);
+            resolve();
+          })
+        })
+        .then(() => {
+          context.commit('sortNavData');
         })
         .catch((error) => {
           console.error("Error getting documents: ", error.message);
