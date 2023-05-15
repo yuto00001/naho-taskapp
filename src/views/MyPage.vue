@@ -14,6 +14,7 @@
     </section>
     <section id="itemB" class="nav">
       <div class="navLink">
+        <router-link to="/SignIn">signin</router-link>
         <router-link to="/AllArchive">AllArchive</router-link>
         <router-link to="/SettingProfile">setting</router-link>
       </div>
@@ -24,25 +25,28 @@
           <div v-if="navData.newNavOpen" class="nav-modal">
             <div class="nav-input">
               <input type="text" class="navModalTitle" v-model="navData.navModalTitle" placeholder="Title">
-              <textarea class="navModalTextArea" v-model="navData.navModalTextArea" cols="30" rows="10"></textarea>
+              <textarea class="navModalTextArea" v-model="navData.navModalTextArea" placeholder="Text Area" cols="30" rows="10"></textarea>
             </div>
             <button @click="closeNewTextStatus">キャンセル</button>
           </div>
         </article>
         <article @click.stop>
-          <div v-for="(memo, index) in navMemoValue" :key="index" class="memo">
-            <div v-if="memo.navOpen" @click="closeNavModal(memo)" class="back-bord"></div>
-            <p @click="openMemoEdit(memo)">{{ memo.navModalTitle }}</p>
-            <div v-if="memo.navOpen" class="nav-modal">
-              <div v-if="!memo.editText" @click="editTextStatus(memo)" class="nav-input">
-                <h2>{{ memo.navModalTitle }}</h2>
-                <pre class="nav-textArea">{{ memo.navModalTextArea }}</pre>
+          <div class="memo-area">
+            <div v-for="(memo, index) in navMemoValue" :key="index" class="memo">
+              <div v-if="memo.navOpen" @click="closeNavModal(memo)" class="back-bord"></div>
+              <p @click="openMemoEdit(memo)">{{ memo.navModalTitle }}</p>
+              <div v-if="memo.navOpen" class="nav-modal">
+                <div v-if="!memo.editText" @click="editTextStatus(memo)" class="nav-input">
+                  <h2>{{ memo.navModalTitle }}</h2>
+                  <p v-if="!memo.navModalTextArea" class="nav-textArea placeholderText">Text Area</p>
+                  <p v-else class="nav-textArea placeholderText">{{ memo.navModalTextArea }}</p>
+                </div>
+                <div v-if="memo.editText" class="nav-input">
+                  <input type="text" class="navModalTitle" v-model="memo.navModalTitle" placeholder="Title">
+                  <textarea class="navModalTextArea" v-model="memo.navModalTextArea" placeholder="Text Area" cols="30" rows="10"></textarea>
+                </div>
+                <button @click="deleteNavItem(memo)">削除</button>
               </div>
-              <div v-if="memo.editText" class="nav-input">
-                <input type="text" class="navModalTitle" v-model="memo.navModalTitle" placeholder="Title">
-                <textarea class="navModalTextArea" v-model="memo.navModalTextArea" cols="30" rows="10"></textarea>
-              </div>
-              <button @click="deleteNavItem(memo)">削除</button>
             </div>
           </div>
         </article>
@@ -50,18 +54,20 @@
     </section>
     <section id="itemC" class="main">
       <h3 clsss="nowDate">{{ $store.state.nowDate }}</h3>
+      <div class="input-area">
+        <input type="text" v-model="taskContent" placeholder="new task">
+        <button @click="addTodo()">ADD</button>
+      </div>
       <div class="todos-area">
+        <h3>Tasks</h3>
         <table>
-          <tr>
-            <th>完了</th>
-            <th>期限</th>
-            <th>todo</th>
-          </tr>
-
           <tr v-for="(task, index) in tasksValue" :key="index">
-            <td><input type="checkbox" v-model="task.completed" @change="handleCheckboxChange(task)"></td>
-            <td><input type="datetime-local" v-model="task.dateLimit" @change="dateLimitSet(task)"></td>
-            <td @click="taskOpen(task)">
+            <td class="td-1"><input type="checkbox" v-model="task.completed" @change="handleCheckboxChange(task)"></td>
+            <td class="td-2">
+              <input type="datetime-local" v-model="task.dateLimit" @change="dateLimitSet(task)">
+              <p class="formattedDate">{{ formatDate(task.dateLimit) }}</p>
+            </td>
+            <td class="td-3" @click="taskOpen(task)">
               <span v-if="!task.taskOpen">{{ task.taskContent }}</span>
             </td>
             <div v-if="task.taskOpen" @click="editEnd(task)" class="back-bord"></div>
@@ -73,7 +79,7 @@
               </div>
               <div v-else class="nav-input">
                 <input type="text" class="navModalTitle" v-model="task.taskContent" placeholder="Task">
-                <textarea class="taskModalTextArea" v-model="task.taskModalTextArea" cols="30" rows="10"></textarea>
+                <textarea class="taskModalTextArea" v-model="task.taskModalTextArea" placeholder="Text Area" cols="30" rows="10"></textarea>
               </div>
               <button @click="deleteTask(task)">削除</button>
             </div>
@@ -84,16 +90,13 @@
       <div class="todos-area end-todos">
         <h3>Archive Tasks</h3>
         <table>
-          <tr>
-            <th>完了</th>
-            <th>期限</th>
-            <th>todo</th>
-          </tr>
-
           <tr v-for="(task, index) in archiveTasksValue" :key="index">
-            <td><input type="checkbox" v-model="task.completed" @change="handleCheckboxChange(task)"></td>
-            <td><input type="datetime-local" v-model="task.dateLimit" @change="dateLimitSet(task)" class="archive-task"></td>
-            <td @click="taskOpen(task)"  class="archive-task">
+            <td class="td-1"><input type="checkbox" v-model="task.completed" @change="handleCheckboxChange(task)"></td>
+            <td class="td-2">
+              <input type="datetime-local" class="archive-task" v-model="task.dateLimit" @change="dateLimitSet(task)">
+              <p class="formattedDate">{{ formatDate(task.dateLimit) }}</p>
+            </td>
+            <td class="td-3 archive-task" @click="taskOpen(task)">
               <span v-if="!task.taskOpen">{{ task.taskContent }}</span>
             </td>
             <div v-if="task.taskOpen" @click="editEnd(task)" class="back-bord"></div>
@@ -105,18 +108,13 @@
               </div>
               <div v-else class="nav-input">
                 <input type="text" class="navModalTitle" v-model="task.taskContent" placeholder="Task">
-              <textarea class="taskModalTextArea" v-model="navData.taskModalTextArea" cols="30" rows="10"></textarea>
+                <textarea class="taskModalTextArea" v-model="task.taskModalTextArea" placeholder="Text Area" cols="30" rows="10"></textarea>
               </div>
               <button @click="deleteTask(task)">削除</button>
             </div>
           </tr>
 
         </table>
-      </div>
-      <div class="input-area">
-        <input type="text" v-model="taskContent">
-        <button @click="addTodo()">追加</button>
-
       </div>
     </section>
   </div>
@@ -286,6 +284,14 @@ export default {
       console.log('dateLiimitSet', task.dateLimit)
       this.$store.dispatch('updateLimitForFirestore', task)
     },
+    formatDate(dateString) {
+      if(dateString) {
+        const date = new Date(dateString);
+        return `${date.getMonth() + 1}/${date.getDate()}`;
+      } else {
+        return 'null';
+      }
+    },
     handleFileUpload() {
       this.selectedFile = this.$refs.fileInput.files[0];
     },
@@ -397,113 +403,7 @@ export default {
 </script>
 
 <style scoped>
-.nav-modal {
-  background-color: blanchedalmond;
-  position: absolute;
-  top: 25vh;
-  right: 0;
-  left: 0;
-  margin: 0 auto;
-  height: 65vh;
-  width: 75vw;
-  z-index: 20;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  padding: 2%;
-}
-.nav-textArea {
-  height: 90%;
-  margin: 5% 0;
-  display: flex;
-  text-align: initial;
-}
 
-.back-bord {
-  background-color: rgba(19, 19, 19, 0.633);
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
-  z-index: 10;
-}
-.nav-input {
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-}
-.nav-modal button {
-  height: 6%;
-}
-.navLink {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-}
-.navItemsArea {
-  height: 90%;
-}
-.navModalTitle {
-  margin: 5% 0 3%;
-  height: 5%;
-}
-.navModalTextArea {
-  height: 83%;
-  padding: 5% 2%;
-}
 
-.todos-area {
-  display: inline-block;
-}
-
-.headInfo {
-  margin: 3vh 0 0;
-}
-.main {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-}
-.todos-area {
-  border: 1px solid black;
-  border-radius: 5px;
-  width: 90%;
-  margin: 2%;
-  padding: 2%;
-}
-table {
-  margin: auto;
-}
-.archive-task,
-.placeholderText {
-  opacity: .5;
-}
-
-#container {
-  height: 82vh;
-  display: grid;
-  grid-template-rows: 15% 35%;
-  grid-template-columns: 20% 80%;
-  grid-template-areas:
-    "img  head"
-    "nav  main"
-    "nav  main"
-    "nav  main"
-
-}
-#itemA {
-  grid-area: head;
-}
-#itemB {
-  grid-area: nav;
-}
-#itemC {
-  grid-area: main;
-}
-#itemD {
-  grid-area: img;
-  align-self: end;
-}
 
 </style>

@@ -162,7 +162,7 @@ export default {
 }
 </script>
 
-<style>
+<style scoped>
 input:invalid + span::after {
   position: absolute;
   content: "✖";
@@ -176,28 +176,36 @@ input:valid + span::after {
 }
 
 .user-icon {
-  position: initial;
+  width: 50%;
 }
 
 .EditableArea {
-  border: 1px solid rgb(47, 47, 47);
   margin: 0 5vw 5vh 5vw;
   padding: 2vh 0 5vh;
+  border-radius: 15px;
+  background: #fafaff;
+  box-shadow: 8px 8px 16px #d5d5d9, -8px -8px 16px #ffffff;
 }
 .signOut-delete,
 .notEditableArea {
   display: flex;
   flex-direction: column;
-  width: fit-content;
+  width: 80vw;
   margin: auto;
 }
 .signOut-delete {
-  margin: 10vh auto 0;
+  margin: 2vh auto 0;
 }
 .signOut-delete button {
   margin: 1vh 0;
 }
-.set {
+.set,
+.signOut-delete button  {
   margin: 2vh 0;
+  padding: 1vh;
+  border: none;
+  border-radius: 10px;
+  background: #fafaff;
+  box-shadow:  7px 7px 10px #d7d7db,-7px -7px 10px #ffffff;
 }
 </style>
