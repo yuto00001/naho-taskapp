@@ -40,7 +40,14 @@ nav a.router-link-exact-active {
   color: #42b983;
 }
 .memo {
-  padding: 5px;
+  width: 100px;
+  height: 25px;
+  padding: 5px 20px;
+  overflow: hidden;
+  line-height: 2rem;
+}
+.memo p {
+  text-align: start;
 }
 .navLink {
   display: flex;
@@ -190,11 +197,14 @@ button {
     flex-direction: column;
     flex-wrap: wrap;
     overflow: scroll;
-    height: 100px;
+    height: 105px;
     width: 70vw;
     border-radius: 10px;
     background: #fafdff;
     box-shadow: 5px 5px 5px #e4e6e8, -5px -5px 5px #ffffff;
+}
+.add-menu {
+  padding: 5px;
 }
 table {
   margin: auto;

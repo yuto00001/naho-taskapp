@@ -18,9 +18,9 @@
         <router-link to="/AllArchive">AllArchive</router-link>
         <router-link to="/SettingProfile">setting</router-link>
       </div>
-      <div class="navItemsArea" @click="openNewMemoEdit">
+      <div class="navItemsArea">
         <!-- add用のarticle -->
-        <article @click.stop>
+        <article>
           <div v-if="navData.newNavOpen" @click="addNavItem" class="back-bord"></div>
           <div v-if="navData.newNavOpen" class="nav-modal">
             <div class="nav-input">
@@ -30,7 +30,7 @@
             <button @click="closeNewTextStatus">キャンセル</button>
           </div>
         </article>
-        <article @click.stop>
+        <article>
           <div class="memo-area">
             <div v-for="(memo, index) in navMemoValue" :key="index" class="memo">
               <div v-if="memo.navOpen" @click="closeNavModal(memo)" class="back-bord"></div>
@@ -47,6 +47,9 @@
                 </div>
                 <button @click="deleteNavItem(memo)">削除</button>
               </div>
+            </div>
+            <div>
+              <p class="add-menu" @click="openNewMemoEdit">+</p>
             </div>
           </div>
         </article>
