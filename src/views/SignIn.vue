@@ -2,12 +2,18 @@
   <div class="signIn-login">
     <div class="signIn-now" v-if="!$store.state.userData.email">
       <div v-if="!a_loginWindow" class="signIn-area">
-        <h2>情報を入力してsignInしてください</h2>
-        <form @submit="creteUser_signIn">
-          <label>
+        <h2>Please enter your information and signIn</h2>
+        <form @submit="creteUser_signIn" class="mainForm">
+          <label class="iconLabel">
             icon image:
-            <input type="file" @change="handleFileUpload" ref="fileInput" required>
-            <span class="validity"></span>
+            <img class="user-icon" :src="$store.state.userData.iconURL" alt="">
+            <div class="addFileBtn">
+              <label for="fileInput" class="custom-file-input-label">
+                &nbsp;&nbsp;Select File&nbsp;&nbsp;
+              </label>
+              <input id="fileInput" type="file" class="custom-file-input" @change="handleFileUpload" ref="fileInput" required>
+              <span class="validity"></span>
+            </div>
           </label>
           <label>
             user Name:
@@ -34,14 +40,14 @@
               <span class="validity"></span>
             </div>
           </label>
-          <button class="resetPass" type="button" @click="resetPass">パスワードを再設定する</button>
+          <button class="resetPass" type="button" @click="resetPass">Reset Password</button>
           <button type="submit">Sign In</button>
-          <button @click.prevent="onLoginWindow">既にSignInがお済みの方はこちら</button>
+          <button @click.prevent="onLoginWindow">Already SignIn?</button>
         </form>
       </div>
       <div v-if="a_loginWindow" class="login-area">
-        <h2>情報を入力してloginしてください</h2>
-        <form @submit="login">
+        <h2>Please enter your information and login</h2>
+        <form @submit="login" class="login-input-area">
           <label>
             Email:
             <input type="email" v-model="userData.email" required>
@@ -61,15 +67,15 @@
               <span class="validity"></span>
             </div>
           </label>
-          <button type="submit">log In</button>
-          <button @click.prevent="onLoginWindow">まだSignInがお済みでない方はこちら</button>
+          <button type="submit" class="login-btn">log In</button>
+          <button @click.prevent="onLoginWindow">Haven't SignIn yet?</button>
         </form>
       </div>
     </div>
     <div class="signIn-already" v-if="$store.state.userData.email">
-      <h2>{{$store.state.userData.userName}}様は既にサインインされています。</h2>
+      <h2>{{$store.state.userData.userName}}, You are already signed in</h2>
       <button>
-        <router-link  outer-link to="/MyPage">マイページを開く</router-link>
+        <router-link  outer-link to="/MyPage">open my page</router-link>
       </button>
     </div>
   </div>
@@ -97,8 +103,11 @@ export default {
     }
   },
   methods: {
-    handleFileUpload() { //todo watchにいれるべきでは。。。ファイル追加されてもデータにはいらない
-      this.selectedFile = this.$refs.fileInput.files[0];
+    handleFileUpload() {
+      const file = this.$refs.fileInput.files[0];
+      this.selectedFile = file;
+      this.$store.dispatch('addIconImage', file)
+      console.log('handleFileUpload');
     },
     ...mapActions([
       'addUserDataForFirebase',
@@ -161,17 +170,6 @@ export default {
           });
       }
     },
-    // resetPass() {
-    //   if(window.confirm('パスワードの再設定用メールを送信しますか？')) {
-    //     const credential = this.$store.dispatch('promptForCredentials');
-    //     firebase.auth().currentUser.reauthenticateWithCredential(credential) //!check
-    //     .then(() => {
-    //       this.$store.dispatch('resetPass')
-    //     }).catch((error) => {
-    //       console.error(error.message);
-    //     });
-    //   }
-    // },
   },
   created() {
     console.log('created run')
@@ -183,6 +181,73 @@ export default {
 
 
 <style scoped>
+.mainForm {
+  width: 85%;
+}
+.signIn-login {
+  margin: 5vh 5vw;
+}
+.signIn-area h2{
+  border-radius: 20px;
+  background: #fafaff;
+  box-shadow: -6px -6px 12px #ffffff;
+}
+.iconLabel {
+  width: 100%;
+}
+.user-icon {
+  width: 90%;
+}
+.addFileBtn {
+  width: 100%;
+  text-align: end;
+}
+.custom-file-input-label {
+  /* ラベルのスタイルを設定する */
+  width: fit-content;
+  text-align: end;
+  display: inline-block;
+  border-radius: 10px;
+  background: #fafaff;
+  box-shadow:  5px 5px 6px #e1e1e6,-5px -5px 6px #ffffff;
+  }
+
+.custom-file-input {
+  /* input要素のスタイルを設定する */
+  display: none;
+}
+button {
+  border-radius: 10px;
+  background: #fafaff;
+  box-shadow: 5px 5px 6px #e1e1e6, -5px -5px 6px #ffffff;
+  border: none;
+  padding: 3%;
+  margin-bottom: 2vh;
+}
+
+input[type="text"],
+input[type="email"],
+.pass-area {
+  border: none;
+  border-radius: 10px;
+  background: #fafaff;
+  box-shadow: 5px 5px 6px #e1e1e6, -5px -5px 6px #ffffff;
+}
+.pass-area input {
+  border: none;
+  background: none;
+}
+.resetPass,
+.login-btn {
+  margin-top: 7vh;
+}
+
+.login-input-area {
+  margin-top: 50vh;
+  width: 85%;
+}
+
+
 .todo-area {
   display: inline-block;
 }
@@ -205,15 +270,8 @@ form{
 }
 .pass-area{
   display: inline;
-  border: 1px solid;
-  border-radius: 2px;
 }
-.pass-area input{
-  border: none;
-}
-.resetPass {
-  margin-bottom: 2vh;
-}
+
 input:invalid + span::after {
   position: absolute;
   content: "✖";

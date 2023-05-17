@@ -294,6 +294,7 @@ export default new Vuex.Store({
       firebase.storage().ref().child(`icons/${fileName}`).getDownloadURL()
       .then((url) => {
         console.log('url', url)
+        context.commit('updateIconURL', url)
         firebase.firestore().collection('users').doc(context.state.userData.docID)
         .update({
           iconURL: url,
@@ -436,12 +437,20 @@ export default new Vuex.Store({
       return firebase.auth.EmailAuthProvider.credential(email, password);
     },
     sortUpdatedTasks(context) {
-      // Firestore クエリでタスク全てを取得
-      firebase.firestore().collection("todos").where("completed", "==", false).get()
-      .then(querySnapshot => {
-        const allTodos = querySnapshot.docs.map(doc => doc.data());
+      firebase.firestore().collection("todos")
+      .where("uuid", "==", context.state.userData.uuid)
+      .where("completed", "==", false)
+      .get()
+      .then((querySnapshot) => {
+        const myData = []
+        // querySnapshotを使用してデータを処理する.該当のtaskを抜き出す
+        querySnapshot.forEach((doc) => {
+          const data = doc.data();
+          myData.push(data)
+          console.log(data);
+        });
         // タスクを日付順にソート
-        allTodos.sort(function(x, y) {
+        myData.sort(function(x, y) {
           if (!Object.prototype.hasOwnProperty.call(x, 'dateLimit')) {
             return -1;
           }
@@ -451,19 +460,27 @@ export default new Vuex.Store({
           return new Date(x.dateLimit) - new Date(y.dateLimit);
         });
         // ソートされたタスクをストアに反映
-        context.commit('sortTasksData', allTodos);
+        context.commit('sortTasksData', myData);
       })
-      .catch(error => {
-        console.error("Error fetching tasks: ", error.message);
+      .catch((error) => {
+        console.error("Error getting documents: ", error.message);
       });
     },
     sortUpdatedArchiveTasks(context) {
-      // Firestore クエリでタスク全てを取得
-      firebase.firestore().collection("todos").where("completed", "==", true).get()
-      .then(querySnapshot => {
-        const allTodos = querySnapshot.docs.map(doc => doc.data());
+      firebase.firestore().collection("todos")
+      .where("uuid", "==", context.state.userData.uuid)
+      .where("completed", "==", true)
+      .get()
+      .then((querySnapshot) => {
+        const myData = []
+        // querySnapshotを使用してデータを処理する.該当のtaskを抜き出す
+        querySnapshot.forEach((doc) => {
+          const data = doc.data();
+          myData.push(data)
+          console.log(data);
+        });
         // タスクを日付順にソート
-        allTodos.sort(function(x, y) {
+        myData.sort(function(x, y) {
           if (!Object.prototype.hasOwnProperty.call(x, 'dateLimit')) {
             return -1;
           }
@@ -473,31 +490,24 @@ export default new Vuex.Store({
           return new Date(x.dateLimit) - new Date(y.dateLimit);
         });
         // ソートされたタスクをストアに反映
-        context.commit('sortArchiveTasksData', allTodos);
+        context.commit('sortArchiveTasksData', myData);
       })
-      .catch(error => {
-        console.error("Error fetching tasks: ", error.message);
+      .catch((error) => {
+        console.error("Error getting documents: ", error.message);
       });
     },
-    //!sortはidで行う。dragする際に連番を与えて行う。連番のない要素は、先頭に追加。fetchされると、連番が再付与される(新たな要素を考慮した連番が付与)。取得できたら、次はグリップした際にupdateが回るように関数を設定する。その後、フェッチの無駄を確認し削除。
     fetchTodoData(context) {
       console.log('fetchTodoData', context.state.userData);
       if(!context.state.userData.email) {
         console.log('fetchTodoData: userData.email is empty');
         return
       } else {
-        firebase.firestore().collection("todos").where("uuid", "==", context.state.userData.uuid).get()
-        .then(() => {
-          console.log('フェッチTODOデータ run')
-          context.dispatch('sortUpdatedTasks');
-          context.dispatch('sortUpdatedArchiveTasks');
-        })
-        .catch((error) => {
-          console.error("Error getting documents: ", error.message);
-        });
+        console.log('フェッチTODOデータ run')
+        context.dispatch('sortUpdatedTasks');
+        context.dispatch('sortUpdatedArchiveTasks');
       }
     },
-    fetchNavItemData(context) { //! notthing muda??
+    fetchNavItemData(context) {
       console.log('fetchNavItemData', context.state.userData);
       if(!context.state.userData.email) {
         console.log('fetchNavItemData: userData.email is empty');

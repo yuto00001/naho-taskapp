@@ -20,7 +20,6 @@
     color: #2c3e50;
     max-width: 100vw;
     margin: 5% 2%;
-    background-color: #fafaff;
 }
 body {
   max-width: 500px;
