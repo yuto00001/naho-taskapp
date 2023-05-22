@@ -115,6 +115,9 @@ export default new Vuex.Store({
   actions: { //methods的にイジる。この中は非同期。コンポ間で共有したいメソッドのみ。
 
     addTodoForFirebase(context, taskContent) {
+      const nowDate = firebase.firestore.Timestamp.now().toDate();
+      const newShaped = format(nowDate, 'yyyyMMddHHmmss');
+
       // todo axiosを用いてデータのやり取りをする（部分更新）
       axios.post(
         todosCollectionURL,
@@ -139,10 +142,10 @@ export default new Vuex.Store({
               stringValue: taskContent
             },
             z_createdAt: {
-              stringValue: myShaped
+              stringValue: newShaped
             },
             z_updatedAt: {
-              stringValue: myShaped
+              stringValue: newShaped
             },
             editing: {
               booleanValue: context.state.editing
@@ -179,6 +182,8 @@ export default new Vuex.Store({
       });
     },
     addNavItemForFirestore(context, navData) {
+      const nowDate = firebase.firestore.Timestamp.now().toDate();
+      const newShaped = format(nowDate, 'yyyyMMddHHmmss');
       axios.post(
         navItemsCollectionURL,
         {
@@ -196,10 +201,10 @@ export default new Vuex.Store({
               stringValue:  ''
             },
             z_createdAt: {
-              stringValue: myShaped
+              stringValue: newShaped
             },
             z_updatedAt: {
-              stringValue: myShaped
+              stringValue: newShaped
             },
             navOpen: {
               booleanValue: false
