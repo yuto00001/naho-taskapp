@@ -171,6 +171,7 @@ export default {
     },
     openMemoEdit(memo) {
       memo.navOpen = true,
+      document.body.classList.add("no-scroll")
       console.log('memo openMemoEdit', memo)
     },
     editTextStatus(memo) {
@@ -178,6 +179,7 @@ export default {
     },
     closeNavModal(memo) {
       memo.navOpen = false,
+      document.body.classList.remove("no-scroll");
       console.log('memo closeNavModal', memo)
       this.updateMemoData(memo)
       memo.editText = false
@@ -309,6 +311,7 @@ export default {
     },
     taskOpen(task) {
       task.taskOpen = true
+      document.body.classList.add("no-scroll")
       console.log('taskOpen')
     },
     editTaskStatus(task) {
@@ -352,6 +355,7 @@ export default {
           )
           .then(() => {
             console.log("editEnd run");
+            document.body.classList.remove("no-scroll")
             task.taskOpen = false
             task.editing = false
           })

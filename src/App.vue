@@ -27,6 +27,9 @@ body {
   height: 95vh;
   margin: 0 auto;
 }
+.no-scroll {
+  overflow: hidden;
+}
 nav {
   padding: 30px;
 }
@@ -102,7 +105,7 @@ button {
 
 
 .nav-modal {
-  position: absolute;
+  position: fixed;
   top: 5vh;
   right: 0;
   left: 0;
@@ -130,7 +133,7 @@ button {
 
 .back-bord {
   background-color: rgba(19, 19, 19, 0.633);
-  position: absolute;
+  position: fixed;
   top: 0;
   left: 0;
   width: 100vw;
