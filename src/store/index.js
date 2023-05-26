@@ -456,15 +456,14 @@ export default new Vuex.Store({
         });
         // タスクを日付順にソート
         myData.sort(function(x, y) {
-          if (!Object.prototype.hasOwnProperty.call(x, 'dateLimit')) {
+          if (!x.dateLimit) {
             return -1;
           }
-          if (!Object.prototype.hasOwnProperty.call(y, 'dateLimit')) {
+          if (!y.dateLimit) {
             return 1;
           }
           return new Date(x.dateLimit) - new Date(y.dateLimit);
         });
-        // ソートされたタスクをストアに反映
         context.commit('sortTasksData', myData);
       })
       .catch((error) => {
@@ -486,10 +485,10 @@ export default new Vuex.Store({
         });
         // タスクを日付順にソート
         myData.sort(function(x, y) {
-          if (!Object.prototype.hasOwnProperty.call(x, 'dateLimit')) {
+          if (!x.dateLimit) {
             return -1;
           }
-          if (!Object.prototype.hasOwnProperty.call(y, 'dateLimit')) {
+          if (!y.dateLimit) {
             return 1;
           }
           return new Date(x.dateLimit) - new Date(y.dateLimit);
