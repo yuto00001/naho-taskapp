@@ -23,6 +23,8 @@ export default new Vuex.Store({
     navData: [],
     a_loginWindow: false,
     editing: false,
+    closeTasksArea: false,
+    closeArchiveArea: false,
     userData: {
       userName: '',
       email: '',
@@ -110,6 +112,12 @@ export default new Vuex.Store({
     },
     toggleInput(state) {
       state.editing = !state.editing;
+    },
+    closeTasksAreaButton(state) {
+      state.closeTasksArea = !state.closeTasksArea;
+    },
+    closeArchiveAreaButton(state) {
+      state.closeArchiveArea = !state.closeArchiveArea;
     },
   },
   actions: { //methods的にイジる。この中は非同期。コンポ間で共有したいメソッドのみ。

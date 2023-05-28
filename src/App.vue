@@ -100,7 +100,16 @@ button {
   background: none;
 
 }
-
+.task-head {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+.open-or-close{
+  display: inline-block;
+  position: absolute;
+  left: 10%;
+}
 
 
 

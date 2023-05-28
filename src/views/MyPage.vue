@@ -18,8 +18,14 @@
         <button @click="addTodo()">ADD</button>
       </div>
       <div class="todos-area">
-        <h3>Tasks</h3>
-        <table>
+        <div class="task-head">
+          <div class="open-or-close" @click="closeTasksAreaButton">
+            <span class="material-icons" v-if="$store.state.closeTasksArea">open_in_full</span>
+            <span class="material-icons" v-else>close_fullscreen</span>
+          </div>
+          <h3>Tasks</h3>
+        </div>
+        <table v-if="!$store.state.closeTasksArea">
           <tr v-for="(task, index) in tasksValue" :key="index">
             <td class="td-1"><input type="checkbox" v-model="task.completed" @change="handleCheckboxChange(task)"></td>
             <td class="td-2">
@@ -47,8 +53,14 @@
         </table>
       </div>
       <div class="todos-area end-todos">
-        <h3>Archive Tasks</h3>
-        <table>
+        <div class="task-head">
+          <div class="open-or-close" @click="closeArchiveAreaButton">
+            <span class="material-icons" v-if="$store.state.closeArchiveArea">open_in_full</span>
+            <span class="material-icons" v-else>close_fullscreen</span>
+          </div>
+          <h3>Archive Tasks</h3>
+        </div>
+        <table v-if="!$store.state.closeArchiveArea">
           <tr v-for="(task, index) in archiveTasksValue" :key="index">
             <td class="td-1"><input type="checkbox" v-model="task.completed" @change="handleCheckboxChange(task)"></td>
             <td class="td-2">
@@ -119,8 +131,12 @@ export default {
     }
   },
   methods: {
-
-
+    closeTasksAreaButton() {
+      this.$store.commit('closeTasksAreaButton')
+    },
+    closeArchiveAreaButton() {
+      this.$store.commit('closeArchiveAreaButton')
+    },
     handleCheckboxChange(task) {
       console.log('task.completed', task.completed)
       this.$store.dispatch('updateCheckTaskForFirestore', task)
