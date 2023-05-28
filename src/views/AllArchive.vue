@@ -16,12 +16,6 @@
       <div class="todos-area end-todos">
         <h3>Archive Tasks</h3>
         <table>
-          <tr>
-            <th>完了</th>
-            <th>期限</th>
-            <th>todo</th>
-          </tr>
-
           <tr v-for="(task, index) in archiveTasksValue" :key="index">
             <td class="td-1"><input type="checkbox" v-model="task.completed" @change="handleCheckboxChange(task)"></td>
             <td class="td-2">
@@ -56,7 +50,9 @@ import firebase from "firebase/app";
 import UserIcon from '@/components/UserIcon.vue';
 import NavArea from '@/components/NavArea.vue';
 import { mapActions } from 'vuex';
-
+import axios from 'axios';
+const CollectionURL = 'https://firestore.googleapis.com/v1/projects/task-app-64bfb/databases/(default)/documents'
+const todosCollectionURL = CollectionURL + "/todos";
 
 
 
@@ -73,80 +69,24 @@ export default {
     NavArea,
   },
   computed: {
-    navMemoValue() {
-      return this.$store.state.navData
-    },
-    tasksValue() {
-      return this.$store.state.tasks
-    },
     archiveTasksValue() {
       return this.$store.state.archiveTasks
     },
   },
   data() {
     return {
+      options: {
+        animation: 200
+      },
       taskContent: '',
       selectedFile: null,
-      navData: {
-        newNavOpen: false,
-        navModalTitle: '',
-        navModalTextArea: '',
-      }
     }
   },
   methods: {
-    openNewMemoEdit() {
-      this.navData.newNavOpen = true,
-      console.log('openNewNavItem')
-    },
-    openMemoEdit(memo) {
-      memo.navOpen = true,
-      console.log('memo openMemoEdit', memo)
-    },
-    editTextStatus(memo) {
-      memo.editText = true
-    },
-    closeNavModal(memo) {
-      if(!memo.navOpen) {
-        this.navData.newNavOpen = false
-        console.log('closeNavModal')
-      } else {
-        memo.navOpen = false,
-        console.log('memo closeNavModal', memo)
-      }
-      memo.editText = false
-    },
-    addNavItem() {
-      if(!this.navData.navModalTitle) {
-        return
-      } else {
-        this.addNavItemForFirestore(this.navData)
-        console.log('addNavItem run', this.navData)
-        this.navData.newNavOpen = false
-      }
-    },
-    deleteNavItem(memo) {
-      if(!confirm('本当に削除しますか？')) {
-        return
-      } else {
-        firebase.firestore().collection("navItems").doc(memo.docID).delete()
-        .then(() => {
-          alert("memoを削除しました");
-          memo.navOpen = false
-        }).catch((error) => {
-          console.error("memo Error removing document: ", error);
-        });
-      }
-    },
-
 
 
     handleCheckboxChange(task) {
       console.log('task.completed', task.completed)
-      this.switchTaskCheck(task)
-    },
-    switchTaskCheck(task) {
-      console.log('archive run', task.completed)
       this.$store.dispatch('updateCheckTaskForFirestore', task)
     },
     dateLimitSet(task) {
@@ -171,40 +111,96 @@ export default {
     addTodo() {
       console.log('addTodaaaao run')
       this.addTodoForFirebase(this.taskContent)
+      this.taskContent = ''
     },
     taskOpen(task) {
       task.taskOpen = true
+      document.body.classList.add("no-scroll")
       console.log('taskOpen')
     },
     editTaskStatus(task) {
       task.editing = true
     },
     editEnd(task) {
-      firebase.firestore().collection("todos").doc(task.docID).update({
-        taskContent: task.taskContent,
-        taskModalTextArea: task.taskModalTextArea,
-        z_updatedAt: myShaped,
-      })
-      .then(() => {
-        console.log("editEnd run");
-        task.taskOpen = false
-        task.editing = false
-      })
-      .catch((error) => {
-        console.error("Error updating document: ", error);
+      axios.get(todosCollectionURL)
+      .then(response => {
+        const todos = response.data.documents;
+
+        const targetTodo = todos.find(item => {
+          return item.fields.z_createdAt.stringValue === task.z_createdAt;
+        });
+
+        if (targetTodo) {
+          const fullPath = targetTodo.name;
+          const documentId = fullPath.split('/').pop();
+          console.log('update get fullpath cut', documentId);
+
+          const updateMaskParams = [
+            "updateMask.fieldPaths=taskContent",
+            "updateMask.fieldPaths=taskModalTextArea",
+            "updateMask.fieldPaths=z_updatedAt"
+          ].join('&');
+
+          axios.patch(
+            `${todosCollectionURL}/${documentId}?${updateMaskParams}`,
+            {
+              fields: {
+                taskContent: {
+                  stringValue: task.taskContent,
+                },
+                taskModalTextArea: {
+                  stringValue: task.taskModalTextArea,
+                },
+                z_updatedAt: {
+                  stringValue: myShaped,
+                },
+              },
+            }
+          )
+          .then(() => {
+            console.log("editEnd run");
+            document.body.classList.remove("no-scroll")
+            task.taskOpen = false
+            task.editing = false
+          })
+          .catch((error) => {
+            console.error("Error updating document: ", error.response.data);
+          });
+        } else {
+          console.log('No matching data found');
+        }
       });
     },
     deleteTask(task) {
       if(!confirm('このtaskを削除しますか？')) {
         return
       } else {
-        firebase.firestore().collection("todos").doc(task.docID).delete()
-        .then(() => {
-          alert("todoを削除しました");
-          task.taskOpen = false
-          task.editing = false
-        }).catch((error) => {
-          console.error("Error removing document: ", error);
+        axios.get(todosCollectionURL)
+        .then(response => {
+          const todos = response.data.documents;
+          const targetTodo = todos.find(item => {
+            return item.fields.z_createdAt.stringValue === task.z_createdAt;
+          });
+          if (targetTodo) {
+            const fullPath = targetTodo.name;
+            const documentId = fullPath.split('/').pop();
+            axios.delete(
+              `${todosCollectionURL}/${documentId}`
+            )
+            .then(() => {
+              task.taskOpen = false
+              task.editing = false
+              // tasks 配列から削除されたタスクを削除
+              this.$store.commit('removeTask', task);
+              this.$store.dispatch('sortUpdatedTasks');
+              this.$store.dispatch('sortUpdatedArchiveTasks');
+            })
+            .catch((error) => {
+              console.error("Error delete document: ", error.response.data);
+            });
+          } else {
+            console.log('No matching data found');
+          }
         });
       }
     },

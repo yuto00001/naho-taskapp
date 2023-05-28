@@ -9,52 +9,7 @@
         <p><router-link  outer-link to="/SignIn">サインインする</router-link></p>
       </div>
     </section>
-    <!-- <section id="itemD">
-      <img class="user-icon" :src="$store.state.userData.iconURL" alt="">
-    </section> -->
     <UserIcon id="itemD"/>
-    <!-- <section id="itemB" class="nav">
-      <div class="navLink">
-        <router-link to="/SignIn">signin</router-link>
-        <router-link to="/AllArchive">AllArchive</router-link>
-        <router-link to="/SettingProfile">setting</router-link>
-      </div>
-      <div class="navItemsArea">
-        <article>
-          <div v-if="navData.newNavOpen" @click="addNavItem" class="back-bord"></div>
-          <div v-if="navData.newNavOpen" class="nav-modal">
-            <div class="nav-input">
-              <input type="text" class="navModalTitle" v-model="navData.navModalTitle" placeholder="Title">
-              <textarea class="navModalTextArea" v-model="navData.navModalTextArea" placeholder="Text Area" cols="30" rows="10"></textarea>
-            </div>
-            <button @click="closeNewTextStatus">キャンセル</button>
-          </div>
-        </article>
-        <article>
-          <div class="memo-area">
-            <div v-for="(memo, index) in navMemoValue" :key="index" class="memo">
-              <div v-if="memo.navOpen" @click="closeNavModal(memo)" class="back-bord"></div>
-              <p @click="openMemoEdit(memo)">{{ memo.navModalTitle }}</p>
-              <div v-if="memo.navOpen" class="nav-modal">
-                <div v-if="!memo.editText" @click="editTextStatus(memo)" class="nav-input">
-                  <h2>{{ memo.navModalTitle }}</h2>
-                  <p v-if="!memo.navModalTextArea" class="nav-textArea placeholderText">Text Area</p>
-                  <p v-else class="nav-textArea placeholderText">{{ memo.navModalTextArea }}</p>
-                </div>
-                <div v-if="memo.editText" class="nav-input">
-                  <input type="text" class="navModalTitle" v-model="memo.navModalTitle" placeholder="Title">
-                  <textarea class="navModalTextArea" v-model="memo.navModalTextArea" placeholder="Text Area" cols="30" rows="10"></textarea>
-                </div>
-                <button @click="deleteNavItem(memo)">削除</button>
-              </div>
-            </div>
-            <div>
-              <p class="add-menu" @click="openNewMemoEdit">+</p>
-            </div>
-          </div>
-        </article>
-      </div>
-    </section> -->
     <NavArea id="itemB" class="nav"/>
     <section id="itemC" class="main">
       <h3 clsss="nowDate">{{ $store.state.nowDate }}</h3>
