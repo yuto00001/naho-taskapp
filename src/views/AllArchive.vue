@@ -9,45 +9,8 @@
         <p><router-link  outer-link to="/SignIn">サインインする</router-link></p>
       </div>
     </section>
-    <section id="itemD">
-      <img class="user-icon" :src="$store.state.userData.iconURL" alt="">
-    </section>
-    <section id="itemB" class="nav">
-      <router-link to="/MyPage">MyPage</router-link>
-      <div class="navItemsArea" @click="openNewMemoEdit">
-        <!-- add用のarticle -->
-        <article @click.stop>
-          <div v-if="navData.newNavOpen" @click="addNavItem" class="back-bord"></div>
-          <div v-if="navData.newNavOpen" class="nav-modal">
-            <div class="nav-input">
-              <input type="text" class="navModalTitle" v-model="navData.navModalTitle" placeholder="Title">
-              <textarea class="navModalTextArea" v-model="navData.navModalTextArea" placeholder="Text Area" cols="30" rows="10"></textarea>
-            </div>
-            <button @click="closeNewTextStatus">キャンセル</button>
-          </div>
-        </article>
-        <article @click.stop>
-          <div class="memo-area">
-            <div v-for="(memo, index) in navMemoValue" :key="index" class="memo">
-              <div v-if="memo.navOpen" @click="closeNavModal(memo)" class="back-bord"></div>
-              <p @click="openMemoEdit(memo)">{{ memo.navModalTitle }}</p>
-              <div v-if="memo.navOpen" class="nav-modal">
-                <div v-if="!memo.editText" @click="editTextStatus(memo)" class="nav-input">
-                  <h2>{{ memo.navModalTitle }}</h2>
-                  <p v-if="!memo.navModalTextArea" class="nav-textArea placeholderText">Text Area</p>
-                  <p v-else class="nav-textArea placeholderText">{{ memo.navModalTextArea }}</p>
-                </div>
-                <div v-if="memo.editText" class="nav-input">
-                  <input type="text" class="navModalTitle" v-model="memo.navModalTitle" placeholder="Title">
-                  <textarea class="navModalTextArea" v-model="memo.navModalTextArea" placeholder="Text Area" cols="30" rows="10"></textarea>
-                </div>
-                <button @click="deleteNavItem(memo)">削除</button>
-              </div>
-            </div>
-          </div>
-        </article>
-      </div>
-    </section>
+    <UserIcon id="itemD"/>
+    <NavArea id="itemB" class="nav"/>
     <section id="itemC" class="main">
       <h3 clsss="nowDate">{{ $store.state.nowDate }}</h3>
       <div class="todos-area end-todos">
@@ -90,6 +53,8 @@
 </template>
 <script>
 import firebase from "firebase/app";
+import UserIcon from '@/components/UserIcon.vue';
+import NavArea from '@/components/NavArea.vue';
 import { mapActions } from 'vuex';
 
 
@@ -104,6 +69,8 @@ const myShaped = format(toDate, 'yyyyMMddHHmmss');
 export default {
   name: 'MyPage',
   components: {
+    UserIcon,
+    NavArea,
   },
   computed: {
     navMemoValue() {
