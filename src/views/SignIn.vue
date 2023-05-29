@@ -107,7 +107,8 @@ export default {
       const file = this.$refs.fileInput.files[0];
       this.selectedFile = file;
       this.$store.dispatch('addIconImage', file)
-      console.log('handleFileUpload');
+      console.log('handleFileUpload', this.$refs.fileInput);
+      console.log('handleFileUpload', this.selectedFile);
     },
     ...mapActions([
       'addUserDataForFirebase',

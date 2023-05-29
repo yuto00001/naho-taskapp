@@ -274,11 +274,13 @@ export default new Vuex.Store({
     addIconImage(context, file) {
       const fileName = file.name;
       console.log('addIconImage', file);
-      console.log('addIconImage', file.name);
+      console.log('addIconImage', fileName);
       context.commit('updateFileName', fileName)
       firebase.storage().ref().child(`icons/${fileName}`).put(file)
       .then((snapshot) => {
         console.log('Uploaded a blob or file!', snapshot);
+        console.log('Uploaded a blob or file!', file);
+        // todo この処理危険じゃないか？ 他ユーザーのものも消してしまいかねない
         context.dispatch('deleteOtherIconImage')
         context.dispatch('updateImageDataForFirestore', file)
       });

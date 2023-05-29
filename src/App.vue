@@ -78,7 +78,9 @@ input[type="datetime-local"],
 button {
   cursor: pointer;
 }
-
+.button {
+  color: black;
+}
 
 
 

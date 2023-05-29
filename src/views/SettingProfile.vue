@@ -107,7 +107,7 @@ export default {
         firebase.auth().signOut()
         .then(() => {
           alert('正常にサインアウトしました')
-          this.$router.push('/signin');
+          this.$router.push('/SignIn');
         }).catch((error) => {
           alert('正常にサインアウトできませんでした')
           console.error('正常にサインアウトできませんでした', error.message)
@@ -126,7 +126,7 @@ export default {
           alert('正常にアカウントを削除しました');
           this.deleteUserData();
           this.deleteUsersTodoData();
-          this.$router.push('/signin');
+          this.$router.push('/SignIn');
         } catch (error) {
           alert('正常にアカウントを削除できませんでした');
           console.error(error);
