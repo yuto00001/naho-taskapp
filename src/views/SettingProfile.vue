@@ -107,6 +107,7 @@ export default {
         firebase.auth().signOut()
         .then(() => {
           alert('正常にサインアウトしました')
+          this.$store.commit('signOut');
           this.$router.push('/SignIn');
         }).catch((error) => {
           alert('正常にサインアウトできませんでした')

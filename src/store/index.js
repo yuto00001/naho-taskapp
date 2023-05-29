@@ -119,6 +119,17 @@ export default new Vuex.Store({
     closeArchiveAreaButton(state) {
       state.closeArchiveArea = !state.closeArchiveArea;
     },
+    signOut(state) {
+      state.userData.userName = '';
+      state.userData.email = '';
+      state.userData.password = '';
+      state.userData.fileName = '';
+      state.userData.iconURL = null;
+      state.userData.uuid = '';
+      state.userData.docID = '';
+      state.userData.z_createdAt = '';
+      state.userData.z_updatedAt = '';
+    },
   },
   actions: { //methods的にイジる。この中は非同期。コンポ間で共有したいメソッドのみ。
 
