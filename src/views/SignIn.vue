@@ -132,7 +132,7 @@ export default {
       firebase.auth().signInWithEmailAndPassword(this.userData.email, this.userData.password)
       .then((userCredential) => {
         this.userData.uuid = userCredential.user.uid
-        this.$store.commit('updateUserData', this.userData)
+        this.$store.commit('updateUserData', {data: this.userData, id: userCredential.user.uid})
         console.log('login run', userCredential)
         alert('ログイン完了')
       })
