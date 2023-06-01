@@ -3,7 +3,7 @@
     <div class="signIn-now" v-if="!$store.state.userData.email">
       <div v-if="!a_loginWindow" class="signIn-area">
         <h2>Please enter your information and signIn</h2>
-        <form @submit="creteUser_signIn" class="mainForm">
+        <form class="mainForm">
           <label class="iconLabel">
             icon image:
             <img class="user-icon" :src="$store.state.userData.iconURL" alt="">
@@ -17,14 +17,18 @@
           </label>
           <label>
             user Name:
-            <input type="text" v-model="userData.userName" placeholder="@" required>
-            <span class="validity"></span>
+            <div class="writing-area">
+              <input type="text" v-model="userData.userName" placeholder="@" required>
+              <span class="validity"></span>
+            </div>
             <p class="passText">ユーザー名は英数小文字で 3文字以上</p>
           </label>
           <label>
             Email:
-            <input type="email" v-model="userData.email" required>
-            <span class="validity"></span>
+            <div class="writing-area">
+              <input type="email" v-model="userData.email" required>
+              <span class="validity"></span>
+            </div>
           </label>
           <label>
             Password:
@@ -41,16 +45,18 @@
             </div>
           </label>
           <button class="resetPass" type="button" @click="resetPass">Reset Password</button>
-          <button type="submit">Sign In</button>
+          <button @click="creteUser_signIn">Sign In</button>
           <button @click.prevent="onLoginWindow">Already SignIn?</button>
         </form>
       </div>
       <div v-if="a_loginWindow" class="login-area">
         <h2>Please enter your information and login</h2>
-        <form @submit="login" class="login-input-area">
+        <form class="login-input-area">
           <label>
             Email:
-            <input type="email" v-model="userData.email" required>
+            <div class="writing-area">
+              <input type="email" v-model="userData.email" required>
+            </div>
             <span class="validity"></span>
           </label>
           <label>
@@ -67,7 +73,7 @@
               <span class="validity"></span>
             </div>
           </label>
-          <button type="submit" class="login-btn">log In</button>
+          <button @click="login" class="login-btn">log In</button>
           <button @click.prevent="onLoginWindow">Haven't SignIn yet?</button>
         </form>
       </div>
@@ -226,15 +232,16 @@ button {
   margin-bottom: 2vh;
 }
 
-input[type="text"],
-input[type="email"],
+.writing-area,
 .pass-area {
+  display: inline;
   border: none;
   border-radius: 10px;
   background: #fafaff;
   box-shadow: 5px 5px 6px #e1e1e6, -5px -5px 6px #ffffff;
 }
-.pass-area input {
+.pass-area input,
+.writing-area input {
   border: none;
   background: none;
 }
