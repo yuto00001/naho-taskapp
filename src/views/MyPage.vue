@@ -158,7 +158,6 @@ export default {
     },
     ...mapActions([
       'addTodoForFirebase',
-      'addNavItemForFirestore',
     ]),
     addTodo() {
       console.log('addTodaaaao run')

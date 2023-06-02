@@ -157,7 +157,7 @@ export default {
         this.navData.newNavOpen = false;
       } else {
         console.log('addNavItem run', this.navData)
-        this.addNavItemForFirestore(this.navData)
+        this.$store.dispatch('addNavItemForFirestore', this.navData)
         this.closeNewTextStatus()
         this.$store.commit('sortNavData');
       }
