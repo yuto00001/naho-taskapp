@@ -192,6 +192,10 @@ button {
 .headInfo {
   margin: 3vh 0 0;
 }
+.nav-textArea {
+  white-space: pre-wrap;
+}
+
 .main {
   display: flex;
   flex-direction: column;
@@ -225,8 +229,7 @@ table {
   padding: 10px 0;
   width: 100%;
 }
-.archive-task,
-.placeholderText {
+.archive-task {
   opacity: .5;
 }
 #container {
