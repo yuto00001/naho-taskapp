@@ -200,6 +200,7 @@ export default {
             .then(() => {
               task.taskOpen = false
               task.editing = false
+              document.body.classList.remove("no-scroll");
               // tasks 配列から削除されたタスクを削除
               this.$store.commit('removeTask', task);
               this.$store.dispatch('sortUpdatedTasks');

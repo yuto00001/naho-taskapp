@@ -96,6 +96,7 @@ button {
   width: 75%;
   padding-right: 5px;
   border: none;
+  background: none;
 }
 .input-area button{
   border: none;
@@ -214,7 +215,8 @@ button {
     display: flex;
     flex-direction: column;
     flex-wrap: wrap;
-    overflow: scroll;
+    overflow-y: hidden;
+    overflow-x: auto;
     height: 105px;
     width: 70vw;
     border-radius: 10px;
@@ -277,5 +279,17 @@ input[type='datetime-local'] {
 .formattedDate {
   position: absolute;
   z-index: 1;
+}
+@media (min-width: 500px) {
+  .memo-area {
+    width: 384px;
+  }
+  .open-or-close{
+  position: relative;
+  left: -26%;
+}
+.task-head h3 {
+  width: 150px;
+}
 }
 </style>

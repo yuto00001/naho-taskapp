@@ -191,11 +191,7 @@ input:valid + span::after {
 .notEditableArea {
   display: flex;
   flex-direction: column;
-  width: 80vw;
-  margin: auto;
-}
-.signOut-delete {
-  margin: 2vh auto 0;
+  margin: 0 5vw;
 }
 .signOut-delete button {
   margin: 1vh 0;

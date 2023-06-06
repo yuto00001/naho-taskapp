@@ -2,7 +2,7 @@
   <div id="container" class="myPage">
     <section id="itemA" class="header">
       <div v-if="$store.state.userData.userName" class="headInfo">
-        <h2>ユーザー：{{ $store.state.userData.userName }}</h2>
+        <h2>{{ $store.state.userData.userName }}</h2>
       </div>
       <div v-else >
         <h2>現在ログインされておりません</h2>

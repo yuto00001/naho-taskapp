@@ -36,7 +36,7 @@
             </div>
           </div>
           <div>
-            <p class="add-menu" @click="openNewMemoEdit">+</p>
+            <p class="add-menu memo" @click="openNewMemoEdit">+</p>
           </div>
         </div>
       </article>
