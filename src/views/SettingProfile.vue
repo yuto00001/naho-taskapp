@@ -125,8 +125,9 @@ export default {
 
           await firebase.auth().currentUser.delete();
           alert('正常にアカウントを削除しました');
-          this.deleteUserData();
-          this.deleteUsersTodoData();
+          await this.deleteUserData();
+          await this.deleteUsersTodoData();
+          this.$store.commit('signOut');
           this.$router.push('/SignIn');
         } catch (error) {
           alert('正常にアカウントを削除できませんでした');
@@ -136,25 +137,23 @@ export default {
         return;
       }
     },
-    deleteUserData() { //todo できていない
-      firebase.firestore().collection("users").doc(this.$store.state.userData.uuid).delete()
-      .then(() => {
-        alert('正常にユーザーデータを削除しました')
-      }).catch((error) => {
+    async deleteUserData() { //todo できていない
+      try {
+        await firebase.firestore().collection("users").doc(this.$store.state.userData.uuid).delete();
+        alert('正常にユーザーデータを削除しました');
+      } catch (error) {
         alert('正常にユーザーデータを削除できませんでした');
-          console.error(error);
-
-      });
+        console.error(error);
+      }
     },
-    deleteUsersTodoData() { //todo できていない
-      firebase.firestore().collection("todos").doc(this.$store.state.userData.uuid).delete()
-      .then(() => {
-        alert('正常にあなたのTodoデータを削除しました')
-      }).catch((error) => {
+    async deleteUsersTodoData() { //todo できていない
+      try {
+        await firebase.firestore().collection("todos").doc(this.$store.state.userData.uuid).delete();
+        alert('正常にあなたのTodoデータを削除しました');
+      } catch (error) {
         alert('正常にあなたのTodoデータを削除できませんでした');
         console.error(error);
-
-      });
+      }
     },
   },
   created() {
