@@ -94,7 +94,7 @@ export default {
     },
     closeNavModal(memo) {
       memo.navOpen = false,
-      document.body.classList.remove("no-scroll");
+      document.body.classList.remove("no-scroll")
       console.log('memo closeNavModal', memo)
       this.updateMemoData(memo)
       memo.editText = false
@@ -141,6 +141,8 @@ export default {
           )
           .then(() => {
             this.$store.commit('sortNavData');
+            this.navData.navModalTitle = '';
+            this.navData.navModalTextArea = '';
           })
           .catch((error) => {
             console.error("Error updating document: ", error.response.data);
