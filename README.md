@@ -1,10 +1,52 @@
+
 # タスク管理アプリ
+このプロジェクトはFirebaseとVue.jsを使用したタスク管理アプリです。
+タスクの作成、編集、削除が行え、その進捗を一覧できます。
+妹の要望により、ニューモフィズムデザインを採用し、すべてのテキスト要素にメモを記述できるようモーダルに対応しています。
 
 ## サイトURL
-[SignIn page](https://task-app-64bfb.web.app/?#/SignIn).
+[task-app-64bfb.web.app](https://task-app-64bfb.web.app/?#/SignIn)
 
-### Compiles and hot-reloads for development
+## 使用技術
+### Firebase
+〈hosting〉
+〈firebase database〉
+〈authentication〉
+〈storage〉
+
+### Vue.js
+〈vuex〉
+〈vue router〉
+〈axios〉
+
+## 主な機能
+タスクの作成、編集、削除
+タスク,アーカイブの表示,非表示
+タスクの進捗状況の可視化
+サブメニューの作成、編集、削除
+ユーザー情報の編集、削除
+パスワード再設定
+
+## スクリーンショット
+![ホーム画面](src/assets/img/スクショ1.png)
+![モーダル画面](src/assets/img/スクショ2.png)
+![設定画面](src/assets/img/スクショ3.png)
+![設定画面](src/assets/img/logo.png)
+
+## インストール
 ```
+# リポジトリをクローン
+git clone https://
+
+# ディレクトリに移動
+cd naho-task-app
+
+# 必要な依存関係をインストール
+npm install
+
+# ローカルサーバを立ち上げ
 npm run serve
 ```
 
+## 連絡先
+質問やフィードバックがある場合は、以下のメールアドレスまでご連絡ください: tanishiki0900709@gmail.com
