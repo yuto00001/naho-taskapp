@@ -31,7 +31,6 @@
 ![ホーム画面](src/assets/img/スクショ1.png)
 ![モーダル画面](src/assets/img/スクショ2.png)
 ![設定画面](src/assets/img/スクショ3.png)
-![設定画面](src/assets/img/logo.png)
 
 ## インストール
 ```
