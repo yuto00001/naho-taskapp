@@ -122,7 +122,7 @@ button {
   right: 0;
   left: 0;
   margin: 0 auto;
-  height: 85vh;
+  height: 87vh;
   width: 80vw;
   z-index: 20;
   display: flex;
@@ -134,13 +134,21 @@ button {
   box-shadow: 1px 1px 1px #f3f3f3, -1px -1px 1px #f7f7f7;
 }
 .nav-textArea {
-  height: 90%;
-  margin: 5% 0;
+  height: 75vh;
+  font-size: 13px;
+  line-height: 1.3;
   display: flex;
   align-items: center;
+  white-space: pre-wrap;
+  text-align: left;
+  padding: 5% 10px;
   border-radius: 15px;
   background: #f5f5f5;
   box-shadow: -3px -3px 5px #ffffff;
+}
+.nav-textArea p {
+  height: 100%;
+  overflow-y: scroll;
 }
 
 .back-bord {
@@ -192,9 +200,6 @@ button {
 }
 .headInfo {
   margin: 3vh 0 0;
-}
-.nav-textArea {
-  white-space: pre-wrap;
 }
 
 .main {

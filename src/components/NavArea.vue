@@ -1,6 +1,6 @@
 <template>
   <div>
-    <div class="navLink">
+    <div class="navLink" @click="CAUTION">
       <router-link to="/MyPage">MyPage</router-link>
       <router-link to="/AllArchive">AllArchive</router-link>
       <router-link to="/SettingProfile">Setting</router-link>
@@ -26,7 +26,9 @@
               <div v-if="!memo.editText" @click="editTextStatus(memo)" class="nav-input">
                 <h2>{{ memo.navModalTitle }}</h2>
                 <p v-if="!memo.navModalTextArea" class="nav-textArea placeholderText">Text Area</p>
-                <p v-else class="nav-textArea placeholderText">{{ memo.navModalTextArea }}</p>
+                <div v-else class="nav-textArea placeholderText">
+                  <p>{{ memo.navModalTextArea }}</p>
+                </div>
               </div>
               <div v-if="memo.editText" class="nav-input">
                 <input type="text" class="navModalTitle" v-model="memo.navModalTitle" placeholder="Title">
@@ -47,6 +49,8 @@
 <script>
 import firebase from "firebase/app";
 import axios from 'axios';
+import { mapActions } from 'vuex';
+import Snd from 'snd-lib';
 const CollectionURL = 'https://firestore.googleapis.com/v1/projects/task-app-64bfb/databases/(default)/documents'
 const navItemsCollectionURL = CollectionURL + "/navItems";
 
@@ -76,18 +80,42 @@ export default {
         navModalTitle: '',
         navModalTextArea: '',
       },
+      snd: null,
     }
   },
+    mounted() {
+    this.snd = new Snd();
+    this.snd.load(Snd.KITS.SND01);
+  },
   methods: {
-
+    ...mapActions(
+      ['playSound'],
+      ),
+    CAUTION() {
+      this.snd.play(Snd.SOUNDS.CAUTION);
+    },
+    BUTTON() {
+      this.snd.play(Snd.SOUNDS.BUTTON);
+    },
+    DISABLED() {
+      this.snd.play(Snd.SOUNDS.DISABLED);
+    },
+    TYPE() {
+      this.snd.play(Snd.SOUNDS.TYPE);
+    },
+    SWIPE() {
+      this.snd.play(Snd.SOUNDS.SWIPE);
+    },
     openNewMemoEdit() {
       this.navData.newNavOpen = true,
       console.log('openNewNavItem')
+      this.BUTTON()
     },
     openMemoEdit(memo) {
       memo.navOpen = true,
       document.body.classList.add("no-scroll")
       console.log('memo openMemoEdit', memo)
+      this.BUTTON()
     },
     editTextStatus(memo) {
       memo.editText = true
@@ -97,6 +125,7 @@ export default {
       document.body.classList.remove("no-scroll")
       console.log('memo closeNavModal', memo)
       this.updateMemoData(memo)
+      this.DISABLED()
       memo.editText = false
     },
     closeNewTextStatus() {
@@ -157,11 +186,13 @@ export default {
     addNavItem() {
       if(!this.navData.navModalTitle) {
         this.navData.newNavOpen = false;
+        this.SWIPE()
       } else {
         console.log('addNavItem run', this.navData)
         this.$store.dispatch('addNavItemForFirestore', this.navData)
         this.closeNewTextStatus()
         this.$store.commit('sortNavData');
+        this.TYPE()
       }
     },
     deleteNavItem(memo) {
@@ -186,6 +217,7 @@ export default {
               this.$store.commit('removeNavItem', memo);
               this.$store.commit('sortNavData');
               this.$store.dispatch('sortNavItems');
+              this.SWIPE()
             })
             .catch((error) => {
               console.error("Error delete document: ", error.response.data);

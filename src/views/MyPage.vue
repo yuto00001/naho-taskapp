@@ -20,8 +20,8 @@
       <div class="todos-area">
         <div class="task-head">
           <div class="open-or-close" @click="closeTasksAreaButton">
-            <span class="material-icons" v-if="$store.state.closeTasksArea">open_in_full</span>
-            <span class="material-icons" v-else>close_fullscreen</span>
+            <span class="material-icons" @click="TRANSITION_DOWN" v-if="$store.state.closeTasksArea">open_in_full</span>
+            <span class="material-icons" @click="TRANSITION_UP" v-else>close_fullscreen</span>
           </div>
           <h3>Tasks</h3>
         </div>
@@ -40,7 +40,9 @@
               <div v-if="!task.editing" @click="editTaskStatus(task)" class="nav-input">
                 <h2>{{ task.taskContent }}</h2>
                 <p v-if="!task.taskModalTextArea" class="nav-textArea placeholderText">Text Area</p>
-                <p v-else class="nav-textArea">{{ task.taskModalTextArea }}</p>
+                <div v-else class="nav-textArea placeholderText">
+                  <p>{{ task.taskModalTextArea  }}</p>
+                </div>
               </div>
               <div v-else class="nav-input">
                 <input type="text" class="navModalTitle" v-model="task.taskContent" placeholder="Task">
@@ -55,8 +57,8 @@
       <div class="todos-area end-todos">
         <div class="task-head">
           <div class="open-or-close" @click="closeArchiveAreaButton">
-            <span class="material-icons" v-if="$store.state.closeArchiveArea">open_in_full</span>
-            <span class="material-icons" v-else>close_fullscreen</span>
+            <span class="material-icons" @click="TRANSITION_DOWN" v-if="$store.state.closeArchiveArea">open_in_full</span>
+            <span class="material-icons" @click="TRANSITION_UP" v-else>close_fullscreen</span>
           </div>
           <h3>Archive Tasks</h3>
         </div>
@@ -98,6 +100,7 @@ import NavArea from '@/components/NavArea.vue';
 
 import { mapActions } from 'vuex';
 import axios from 'axios';
+import Snd from 'snd-lib';
 const CollectionURL = 'https://firestore.googleapis.com/v1/projects/task-app-64bfb/databases/(default)/documents'
 const todosCollectionURL = CollectionURL + "/todos";
 
@@ -128,9 +131,39 @@ export default {
       },
       taskContent: '',
       selectedFile: null,
+      snd: null,
     }
   },
+  mounted() {
+    this.snd = new Snd();
+    this.snd.load(Snd.KITS.SND01);
+  },
   methods: {
+    ...mapActions(
+      ['playSound'],
+      ),
+    BUTTON() {
+      this.snd.play(Snd.SOUNDS.BUTTON);
+    },
+    DISABLED() {
+      this.snd.play(Snd.SOUNDS.DISABLED);
+    },
+    SWIPE() {
+      this.snd.play(Snd.SOUNDS.SWIPE);
+    },
+    TYPE() {
+      this.snd.play(Snd.SOUNDS.TYPE);
+    },
+    PROGRESS_LOOP() {
+      this.snd.play(Snd.SOUNDS.PROGRESS_LOOP);
+    },
+    TRANSITION_UP() {
+      this.snd.play(Snd.SOUNDS.TRANSITION_UP);
+    },
+    TRANSITION_DOWN() {
+      this.snd.play(Snd.SOUNDS.TRANSITION_DOWN);
+    },
+
     closeTasksAreaButton() {
       this.$store.commit('closeTasksAreaButton')
     },
@@ -140,6 +173,11 @@ export default {
     handleCheckboxChange(task) {
       console.log('task.completed', task.completed)
       this.$store.dispatch('updateCheckTaskForFirestore', task)
+      if (task.completed) {
+        this.PROGRESS_LOOP()
+      } else {
+        this.DISABLED()
+      }
     },
     dateLimitSet(task) {
       console.log('dateLiimitSet', task.dateLimit)
@@ -156,18 +194,17 @@ export default {
     handleFileUpload() {
       this.selectedFile = this.$refs.fileInput.files[0];
     },
-    ...mapActions([
-      'addTodoForFirebase',
-    ]),
     addTodo() {
       console.log('addTodaaaao run')
-      this.addTodoForFirebase(this.taskContent)
+      this.$store.dispatch('addTodoForFirebase', this.taskContent)
       this.taskContent = ''
+      this.TYPE()
     },
     taskOpen(task) {
       task.taskOpen = true
       document.body.classList.add("no-scroll")
       console.log('taskOpen')
+      this.BUTTON()
     },
     editTaskStatus(task) {
       task.editing = true
@@ -213,6 +250,7 @@ export default {
             document.body.classList.remove("no-scroll")
             task.taskOpen = false
             task.editing = false
+            this.DISABLED()
           })
           .catch((error) => {
             console.error("Error updating document: ", error.response.data);
@@ -246,6 +284,7 @@ export default {
               this.$store.commit('removeTask', task);
               this.$store.dispatch('sortUpdatedTasks');
               this.$store.dispatch('sortUpdatedArchiveTasks');
+              this.SWIPE()
             })
             .catch((error) => {
               console.error("Error delete document: ", error.response.data);
@@ -259,6 +298,7 @@ export default {
   },
   created() {
     console.log('created run')
+    this.$store.dispatch('loadSnd');
     this.$store.dispatch('onAuthStateChangedHandler')
   }
 }
